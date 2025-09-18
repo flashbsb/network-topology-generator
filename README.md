@@ -64,7 +64,7 @@ python GeradorTopologias.py
 
 ### Modo Terminal (CLI)
 ```bash
-python GeradorTopologias.py [OPÇÕES] arquivo_conexoes.csv
+python GeradorTopologias.py [OPÇÕES] arquivo_conexoes.csv arquivo_conexoes2.csv arquivo_conexoesN.csv
 ```
 
 ### ⚡ Opções da CLI
