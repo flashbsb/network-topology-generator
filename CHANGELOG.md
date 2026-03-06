@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.2] - 2026-03-06
+### Added
+- **Empty Layer Pruning**: Layers without any elements (nodes or connections) are now automatically omitted from the generated Draw.io diagrams and Legend to reduce clutter.
+- **Empty Page Skipping**: Pages defined in configuration that result in no rendered elements are now completely skipped.
+
+## [1.1.1] - 2026-03-06
+
+## [1.0.3] - 2026-03-06
+### Fixed
+- Suppressed `RuntimeWarning` from `networkx` regarding duplicate backends (`nx-loopback`) to ensure a cleaner CLI output.
+
 ## [1.0.1] - 2026-03-06
 ### Added
 - Integrated `StatusPrinter` for a much cleaner and visually informative CLI output with ANSI colors and task progress indicators.

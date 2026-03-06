@@ -5,6 +5,10 @@
 SCRIPT OTIMIZADO PARA GERAÇÃO DE TOPOLOGIAS DE REDE COM CLI e GUI
 """
 
+import warnings
+# Suppress NetworkX backend warnings (must be before networkx import)
+warnings.filterwarnings("ignore", category=RuntimeWarning, module="networkx")
+
 import sys
 import csv
 import os
@@ -22,8 +26,11 @@ from datetime import datetime
 from collections import defaultdict
 import platform
 import glob
+import threading
+import multiprocessing
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
-versionctr = "1.0.1"
+versionctr = "1.1.2"
 REPO_URL = "https://github.com/flashbsb/network-topology-generator"
 
 # =====================================================
@@ -42,40 +49,76 @@ class Colors:
     GRAY = '\033[90m'
 
 class StatusPrinter:
-    """Helper for pretty printing status in the terminal"""
-    @staticmethod
-    def show_task(message, status="in_progress"):
-        prefix = ""
-        if status == "in_progress":
-            prefix = f"{Colors.BLUE}🌀 {message}...{Colors.ENDC}"
-        elif status == "success":
-            prefix = f"{Colors.GREEN}✅ {message}{Colors.ENDC}"
-        elif status == "warning":
-            prefix = f"{Colors.WARNING}⚠️  {message}{Colors.ENDC}"
-        elif status == "error":
-            prefix = f"{Colors.FAIL}❌ {message}{Colors.ENDC}"
-        elif status == "info":
-            prefix = f"{Colors.CYAN}ℹ️  {message}{Colors.ENDC}"
-        
-        print(prefix)
+    """Helper for pretty printing status in the terminal with multi-process safety"""
+    _lock = multiprocessing.Lock()
+    _total_tasks = 0
+    _completed_tasks = multiprocessing.Value('i', 0)
 
-    @staticmethod
-    def show_header():
-        print(f"\n{Colors.BOLD}{Colors.HEADER}===================================================={Colors.ENDC}")
-        print(f"{Colors.BOLD}{Colors.HEADER}   NETWORK TOPOLOGY GENERATOR - {versionctr}{Colors.ENDC}")
-        print(f"{Colors.BOLD}{Colors.HEADER}===================================================={Colors.ENDC}\n")
+    @classmethod
+    def set_total_tasks(cls, count):
+        with cls._lock:
+            cls._total_tasks = count
+            cls._completed_tasks.value = 0
 
-    @staticmethod
-    def show_summary(total_time, total_files, success_count, nodes_count=0, connections_count=0):
-        print(f"\n{Colors.BOLD}{Colors.CYAN}📊 EXECUTION SUMMARY{Colors.ENDC}")
-        print(f"{Colors.GRAY}----------------------------------------------------{Colors.ENDC}")
-        print(f"⏱️  Total time:     {Colors.BOLD}{total_time:.2f}s{Colors.ENDC}")
-        print(f"📂 Files processed: {Colors.BOLD}{success_count}/{total_files}{Colors.ENDC}")
-        if nodes_count or connections_count:
-            print(f"🏗️  Infrastructure: {Colors.BOLD}{nodes_count} nodes, {connections_count} connections{Colors.ENDC}")
-        print(f"{Colors.GRAY}----------------------------------------------------{Colors.ENDC}")
-        print(f"🔗 Repository:     {Colors.UNDERLINE}{REPO_URL}{Colors.ENDC}")
-        print(f"✨ {Colors.GREEN}Processing completed successfully!{Colors.ENDC}\n")
+    @classmethod
+    def show_task(cls, message, status="in_progress"):
+        with cls._lock:
+            # Task completion tracking - Only count actual layout generations
+            # to match the total tasks calculation (Files * Layouts)
+            if status == "success" and "layout generated" in message:
+                cls._completed_tasks.value += 1
+
+            prefix = ""
+            if status == "in_progress":
+                prefix = f"{Colors.BLUE}🌀 {message}...{Colors.ENDC}"
+            elif status == "success":
+                prefix = f"{Colors.GREEN}✅ {message}{Colors.ENDC}"
+            elif status == "warning":
+                prefix = f"{Colors.WARNING}⚠️  {message}{Colors.ENDC}"
+            elif status == "error":
+                prefix = f"{Colors.FAIL}❌ {message}{Colors.ENDC}"
+            elif status == "info":
+                prefix = f"{Colors.CYAN}ℹ️  {message}{Colors.ENDC}"
+            
+            # PROGRESS BAR LOGIC:
+            # We only show the bar for 'in_progress' and intermediate 'success' (layout generated)
+            # Final success ('Success:') and generic 'info/warning' will NOT show the bar for a cleaner look
+            is_active = (status == "in_progress") or ("layout generated" in message)
+            
+            if cls._total_tasks > 0 and is_active:
+                current = min(cls._completed_tasks.value, cls._total_tasks)
+                progress = (current / cls._total_tasks) * 100
+                bar_len = 20
+                filled_len = int(bar_len * current // cls._total_tasks)
+                bar = '█' * filled_len + '-' * (bar_len - filled_len)
+                
+                print(f"\r[{bar}] {progress:3.0f}% | {prefix}", end='\033[K')
+                if status != "in_progress":
+                    print() # Move to next line if it's a completion
+            else:
+                # Normal print for other statuses or if no total tasks
+                # Ensure we clear the line if we were showing a progress bar
+                print(f"\r{prefix}", end='\033[K\n')
+
+    @classmethod
+    def show_header(cls):
+        with cls._lock:
+            print(f"\n{Colors.BOLD}{Colors.HEADER}===================================================={Colors.ENDC}")
+            print(f"{Colors.BOLD}{Colors.HEADER}   NETWORK TOPOLOGY GENERATOR - {versionctr}{Colors.ENDC}")
+            print(f"{Colors.BOLD}{Colors.HEADER}===================================================={Colors.ENDC}\n")
+
+    @classmethod
+    def show_summary(cls, total_time, total_files, success_count, nodes_count=0, connections_count=0):
+        with cls._lock:
+            print(f"\n{Colors.BOLD}{Colors.CYAN}📊 EXECUTION SUMMARY{Colors.ENDC}")
+            print(f"{Colors.GRAY}----------------------------------------------------{Colors.ENDC}")
+            print(f"⏱️  Total time:     {Colors.BOLD}{total_time:.2f}s{Colors.ENDC}")
+            print(f"📂 Files processed: {Colors.BOLD}{success_count}/{total_files}{Colors.ENDC}")
+            if nodes_count or connections_count:
+                print(f"🏗️  Infrastructure: {Colors.BOLD}{nodes_count} nodes, {connections_count} connections{Colors.ENDC}")
+            print(f"{Colors.GRAY}----------------------------------------------------{Colors.ENDC}")
+            print(f"🔗 Repository:     {Colors.UNDERLINE}{REPO_URL}{Colors.ENDC}")
+            print(f"✨ {Colors.GREEN}Processing completed successfully!{Colors.ENDC}\n")
 
 # Try to import psutil for memory monitoring, but it's not mandatory
 PSUTIL_AVAILABLE = False
@@ -1236,6 +1279,10 @@ class TopologyGenerator:
                  regionalization=False, locations_file='locations.csv',
                  hide_node_names=False, hide_connection_layers=False,
                  ignore_optional=False, filter_string=None):
+        
+        # Style caches for performance
+        self._node_style_cache = {}
+        self._connection_style_cache = {}
         self.elements_file = elements_file
         self.connections_file = connections_file
         self.config = config
@@ -1843,16 +1890,14 @@ class TopologyGenerator:
                 display_text += f', ... (+{orphan_count - 10} more)'
             
             if self.include_orphans:
-                logger.warning(  # Changed to logger.warning
-                    "%d unconnected nodes included (option -y): %s", 
-                    orphan_count, 
-                    display_text
+                StatusPrinter.show_task(
+                    f"{os.path.basename(self.connections_file)}: {orphan_count} unconnected nodes included", 
+                    "warning"
                 )
             else:
-                logger.warning(  # Changed to logger.warning
-                    "%d unconnected nodes removed: %s", 
-                    orphan_count, 
-                    display_text
+                StatusPrinter.show_task(
+                    f"{os.path.basename(self.connections_file)}: {orphan_count} unconnected nodes removed", 
+                    "info"
                 )
                 # Remove orphan nodes
                 for node in orphan_list:
@@ -1938,8 +1983,8 @@ class TopologyGenerator:
                 positions[node] = (x, y)
         
         elapsed = time.perf_counter() - start_time
-        logger.debug("⚙️ Circular layout calculated in %.3fs | Levels: %d", 
-                   elapsed, len(self.circular_alignments))
+        logger.info("⚙️ Circular layout calculated in %.3fs for %d nodes", 
+                    elapsed, len(positions))
         return positions
 
     def calculate_organico_positions(self):
@@ -1964,9 +2009,11 @@ class TopologyGenerator:
         k_base = cfg.get("k_base", 0.25)
         k_min = cfg.get("k_min", 0.8)
         k_max = cfg.get("k_max", 2.5)
-        iterations_per_node = cfg.get("iterations_per_node", 10)
-        iterations_min = cfg.get("iterations_min", 500)
-        iterations_max = cfg.get("iterations_max", 2000)
+        # For large graphs, we MUST reduce iterations to keep it responsive
+        iterations_per_node = cfg.get("iterations_per_node", 2 if num_nodes > 500 else 5)
+        iterations_min = cfg.get("iterations_min", 100 if num_nodes > 500 else 300)
+        iterations_max = cfg.get("iterations_max", 500 if num_nodes > 500 else 1000)
+        
         scale_per_node = cfg.get("scale_per_node", 0.5)
         scale_min = cfg.get("scale_min", 5.0)
         scale_max = cfg.get("scale_max", 30.0)
@@ -1976,6 +2023,13 @@ class TopologyGenerator:
         # Calculate dynamic parameters based on the network
         k_value = max(k_min, min(k_max, k_base * math.sqrt(num_nodes)))
         iterations_value = max(iterations_min, min(iterations_max, num_nodes * iterations_per_node))
+        
+        # PERFORMANCE BOOST: Hard cap iterations for CLI responsiveness on large graphs
+        if num_nodes > 500:
+            iterations_max_safe = 500
+            iterations_value = min(iterations_value, iterations_max_safe)
+            logger.info("Cap applied for %d nodes: iterations limited to %d", num_nodes, iterations_value)
+            
         scale_value = max(scale_min, min(scale_max, num_nodes * scale_per_node))
         
         logger.info("Organic parameters: k=%.2f, iterations=%d, scale=%.2f", 
@@ -2025,8 +2079,8 @@ class TopologyGenerator:
         }
         
         elapsed = time.perf_counter() - start_time
-        logger.debug("⚙️ Organic layout calculated in %.3fs | Nodes: %d | Edges: %d", 
-                   elapsed, len(G.nodes), len(G.edges))
+        logger.info("⚙️ Organic layout calculated in %.3fs for %d nodes (%d iterations)", 
+                    elapsed, len(G.nodes), iterations_value)
         return result
 
     def calculate_geographic_positions(self):
@@ -2139,56 +2193,57 @@ class TopologyGenerator:
         
         while changed and iter_count < max_iterations:
             changed = False
-            for i in range(len(nodes)):
-                for j in range(i + 1, len(nodes)):
-                    node1 = nodes[i]
-                    node2 = nodes[j]
-                    
-                    x1, y1 = positions[node1]
-                    x2, y2 = positions[node2]
-                    
-                    # Calculate Euclidean distance
-                    distance = math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
-                    
-                    # Calculate minimum required distance
-                    min_required = node_sizes[node1]/2 + node_sizes[node2]/2 + cfg.get("min_node_distance", 150)
-                    
-                    if distance < min_required:
-                        changed = True
-                        # Calculate direction vector
-                        dx = x2 - x1
-                        dy = y2 - y1
-                        if dx == 0 and dy == 0:
-                            # Rare case of same position
-                            angle = random.uniform(0, 2 * math.pi)
-                            dx = math.cos(angle)
-                            dy = math.sin(angle)
-                            distance = 1
-                        
-                        # Displacement factor (proportional to overlap)
-                        move_factor = (min_required - distance) / distance
-                        
-                        # Apply displacement keeping the midpoint
-                        move_x = dx * move_factor * 0.5
-                        move_y = dy * move_factor * 0.5
-                        
-                        # Update positions
-                        positions[node1] = (
-                            positions[node1][0] - move_x,
-                            positions[node1][1] - move_y
-                        )
-                        positions[node2] = (
-                            positions[node2][0] + move_x,
-                            positions[node2][1] + move_y
-                        )
+            # PERFORMANCE BOOST: Spatial Partitioning (Grid)
+            # Instead of O(N^2), we look only at neighboring cells
+            # We use a grid size proportional to min_node_distance
+            grid_size = cfg.get("min_node_distance", 150) * 1.5
+            grid = defaultdict(list)
+            for node, (x, y) in positions.items():
+                gx, gy = int(x / grid_size), int(y / grid_size)
+                grid[(gx, gy)].append(node)
+            
+            for node1 in nodes:
+                x1, y1 = positions[node1]
+                gx1, gy1 = int(x1 / grid_size), int(y1 / grid_size)
+                
+                # Check 9 surrounding cells
+                for dx in [-1, 0, 1]:
+                    for dy in [-1, 0, 1]:
+                        neighbor_cells = grid.get((gx1+dx, gy1+dy), [])
+                        for node2 in neighbor_cells:
+                            if node1 == node2: continue # Same node
+                            
+                            x2, y2 = positions[node2]
+                            
+                            # Euclidean distance (squared first for speed)
+                            diff_x = x2 - x1
+                            diff_y = y2 - y1
+                            dist_sq = diff_x**2 + diff_y**2
+                            
+                            # Minimum required distance
+                            min_required = node_sizes[node1]/2 + node_sizes[node2]/2 + cfg.get("min_node_distance", 150)
+                            
+                            if dist_sq < min_required**2:
+                                distance = math.sqrt(dist_sq) or 1.0
+                                changed = True
+                                
+                                # Displacement factor
+                                move_factor = (min_required - distance) / distance
+                                move_x = diff_x * move_factor * 0.5
+                                move_y = diff_y * move_factor * 0.5
+                                
+                                # Update positions
+                                positions[node1] = (x1 - move_x, y1 - move_y)
+                                positions[node2] = (x2 + move_x, y2 + move_y)
+                                # Note: the grid is not updated mid-loop, but that's fine for this alg
             iter_count += 1
         
         logger.info(f"Overlap prevention completed in {iter_count} iterations")
         # ================================================
         
         elapsed = time.perf_counter() - start_time
-        logger.debug("⚙️ Geographic layout calculated in %.3fs | Nodes with coord: %d | Without coord: %d", 
-                   elapsed, len(valid_nodes), len(nodes_without_coords))
+        logger.info("⚙️ Geographic layout calculated in %.3fs for %d nodes", 
+                    elapsed, len(positions))
         return positions
 
 
@@ -2245,8 +2300,8 @@ class TopologyGenerator:
             current_y += max(self._get_node_style(self.nodes[node])["height"] for node in nodes) + vertical_spacing
         
         elapsed = time.perf_counter() - start_time
-        logger.debug("⚙️ Hierarchical layout calculated in %.3fs | Levels: %d", 
-                   elapsed, len(nodes_by_level))
+        logger.info("⚙️ Hierarchical layout calculated in %.3fs for %d nodes in %d levels", 
+                    elapsed, len(positions), len(nodes_by_level))
         return positions
 
 
@@ -2261,24 +2316,24 @@ class TopologyGenerator:
         Returns:
             dict: {style: string, width: int, height: int}
         """
-        layer = node_data['layer']
+        """Generates visual style for a node with cache support"""
+        # Create a cache key based on properties that affect style
+        style_key = (
+            node_data['layer'], node_data.get('level'), node_data.get('color'), 
+            node_data.get('shape'), node_data.get('prIcon'), scale_factor
+        )
+        if style_key in self._node_style_cache:
+            return self._node_style_cache[style_key]
+            
+        # Determine base layer (removing regional/connection suffixes)
+        base_layer = node_data['layer'].split('_', 1)[0]
         
-        # Special style for elements without siteid
-        if layer == "SEM_SITEID":
-            return {
-                "style": "shape=mxgraph.basic.ellipse;fillColor=#FF0000;strokeColor=#FFFFFF;",
-                "width": 60 * scale_factor,
-                "height": 60 * scale_factor
-            }
-        
-        base_layer = layer.split('_', 1)[0]  # Remove regional suffix
-        
-        # Get layer style or default
+        # Get style for the base layer or default
         layer_styles = self.config["LAYER_STYLES"].get(
             base_layer, 
-            self.config["LAYER_STYLES"].get("default", {})
+            self.config["LAYER_STYLES"]["default"]
         )
-
+        
         # Determine fill color
         fill_color = None
         if node_data.get('color'):
@@ -2335,16 +2390,16 @@ class TopologyGenerator:
         }
 
     def _get_connection_style(self, connection, scale_factor=1.0):
-        """
-        Generates visual style for a connection with scale support
-        
-        Args:
-            connection (dict): Connection data
-            scale_factor (float): Scaling factor for sizing
-            
-        Returns:
-            str: Style string
-        """
+        """Generates visual style for a connection with cache support"""
+        # Create a cache key using connection properties that affect style
+        style_key = (
+            connection['layer'], connection['strokeWidth'], connection['strokeColor'],
+            connection['dashed'], connection['fontStyle'], connection.get('fontSize'),
+            scale_factor
+        )
+        if style_key in self._connection_style_cache:
+            return self._connection_style_cache[style_key]
+
         # Determine base layer (removing suffixes)
         base_layer = connection['layer'].replace("_CNX", "").split('_', 1)[0]
         
@@ -2379,12 +2434,14 @@ class TopologyGenerator:
             "strokeColor": stroke_color,
             "dashed": connection['dashed'] or '0',
             "fontStyle": connection['fontStyle'] or '1',
-            "fontSize": str(scaled_font_size),  # USE SCALED VALUE
+            "fontSize": str(scaled_font_size),
             "fontColor": stroke_color
         })
         
-        # Build final style string
-        return ";".join([f"{key}={value}" for key, value in style_template.items()])
+        # Build final style string and cache it
+        res = ";".join([f"{key}={value}" for key, value in style_template.items()])
+        self._connection_style_cache[style_key] = res
+        return res
 
     def generate_drawio(self, output_file, layout_type):
         """
@@ -2445,17 +2502,26 @@ class TopologyGenerator:
                 )
             ]
 
+            # PERFORMANCE BOOST: Pre-calculate connection distributions once per diagram
+            # instead of doing it 7 times inside _generate_page loop
+            connection_stats = self._precalculate_connection_stats()
+            
             # Generate each page defined in config
             for page_def in self.config["PAGE_DEFINITIONS"]:
-                page_content = self._generate_page(page_def, positions, layout_type, scale_factor, locked)
-                if page_content is not None:  # Add only non-empty pages
+                page_start = time.perf_counter()
+                page_content = self._generate_page(page_def, positions, layout_type, 
+                                                connection_stats, scale_factor, locked)
+                if page_content is not None:
                     content.append(page_content)
+                logger.debug("Page %s generated in %.3fs", page_def["name"], time.perf_counter() - page_start)
                 
             content.append(DRAWIO_FOOTER)
             
             # Write final file
+            write_start = time.perf_counter()
             with open(output_file, 'w', encoding='utf-8') as f:
                 f.write('\n'.join(content))
+            logger.debug("File write completed in %.3fs", time.perf_counter() - write_start)
             
             # Log generation time
             gen_time = time.perf_counter() - gen_start
@@ -2469,7 +2535,17 @@ class TopologyGenerator:
                        layout_type, len(positions), len(self.connections))
             return False
 
-    def _generate_page(self, page_def, positions, layout_type, scale_factor=1.0, locked=0):
+    def _precalculate_connection_stats(self):
+        """Pre-calculates connection counts between node pairs to avoid redundant work"""
+        connection_counts = defaultdict(int)
+        for conn in self.connections:
+            # Check if source/target are in node_ids to avoid errors later
+            if conn['source'] in self.node_ids and conn['target'] in self.node_ids:
+                key = (conn['source'], conn['target'])
+                connection_counts[key] += 1
+        return connection_counts
+
+    def _generate_page(self, page_def, positions, layout_type, connection_stats, scale_factor=1.0, locked=0):
         """
         Generates XML content for a specific page
         
@@ -2477,6 +2553,7 @@ class TopologyGenerator:
             page_def (dict): Page definition from config
             positions (dict): Node -> position mapping
             layout_type (str): Type of layout used
+            connection_stats (dict): Pre-calculated connection counts (node pair -> int)
             scale_factor (float): Scaling factor for node sizing
             locked (int): Layer lock status (0=editable, 1=locked)
             
@@ -2529,6 +2606,29 @@ class TopologyGenerator:
                     f'        </mxCell>'
                 ])
 
+        # PERFORMANCE BOOST: Pre-calculate active nodes for this page
+        generated_nodes = set()
+        for node in positions:
+            if node in self.nodes and self.nodes[node]['layer'] in expanded_visible_layers:
+                generated_nodes.add(node)
+        
+        # Identify layers that actually have content for THIS page
+        active_layers = set()
+        for node in generated_nodes:
+            active_layers.add(self.nodes[node]['layer'])
+        
+        # Track connections to see if their layers are active
+        for conn in self.connections:
+            if (conn['layer'] in expanded_visible_layers and
+                conn['source'] in generated_nodes and
+                conn['target'] in generated_nodes):
+                active_layers.add(conn['layer'])
+
+        # Skip page if absolutely empty
+        if not active_layers and not generated_nodes:
+            logger.info(f"Page '{page_def['name']}' is empty and will be omitted.")
+            return None
+
         # Add layer objects in alphabetical order
         sorted_layers = sorted(self.layer_ids.items(), key=lambda x: x[0])
         for layer, lid in sorted_layers:
@@ -2539,7 +2639,7 @@ class TopologyGenerator:
                 if layer.endswith("_CNX") and self.hide_connection_layers:
                     layer_visible = "0"
                 
-            if layer not in expanded_visible_layers:
+            if layer not in active_layers:
                 continue
                 
             page_content.extend([
@@ -2548,24 +2648,9 @@ class TopologyGenerator:
                 f'        </object>'
             ])
 
-        # Precompute nodes to be generated
-        generated_nodes = set()
-        for node in positions:
-            if node in self.nodes and self.nodes[node]['layer'] in expanded_visible_layers:
-                generated_nodes.add(node)
+        # Nodes already precomputed as generated_nodes above
         
-        # --- START OF MODIFICATION ---
-        # Logic to handle multiple connections
-        
-        # 1. Count how many connections exist between each pair of nodes
-        connection_counts = defaultdict(int)
-        connection_directions = {}  # Track unique directions
-
-        for conn in self.connections:
-            key = (conn['source'], conn['target'])  # DIRECTIONAL tuple
-            connection_counts[key] += 1
-            connection_directions[key] = (conn['source'], conn['target'])
-        # 2. Keep track of the current connection index we are drawing
+        # 2. Keep track of the current connection index we are drawing for this specific page
         connection_indices = defaultdict(int)
         
         # Spacing factor between lines (in pixels)
@@ -2593,7 +2678,7 @@ class TopologyGenerator:
 
             # Key for this pair of connections
             key = (origem_node, destino_node)  # Use directional tuple
-            total_conns = connection_counts[key]
+            total_conns = connection_stats[key]
             
             if total_conns > 1:
                 # Get the coordinates of the source and target nodes
@@ -2724,7 +2809,8 @@ class TopologyGenerator:
         pos_y = max_y + margin
         
         base_layers = set()
-        for layer in expanded_visible_layers:
+        for layer in active_layers:
+            if layer.endswith("_CNX"): continue
             base_layer = layer.split('_', 1)[0]
             base_layers.add(base_layer)
 
@@ -2884,12 +2970,12 @@ def process_file(connections_file, config, include_orphans=False, layouts_choice
         # Generate only selected layouts
         for layout_key, layout_name in layouts_to_process:
             output_file = os.path.join(output_dir, f"{base_name}_{timestamp}_{layout_key}.drawio")
-            StatusPrinter.show_task(f"Generating {layout_name} layout", "in_progress")
+            StatusPrinter.show_task(f"{os.path.basename(connections_file)}: Generating {layout_name}", "in_progress")
             if generator.generate_drawio(output_file, layout_key):
                 generated_layouts.append(layout_name)
-                # StatusPrinter.show_task(f"{layout_name} layout generated", "success")
+                StatusPrinter.show_task(f"{os.path.basename(connections_file)}: {layout_name} layout generated", "success")
             else:
-                StatusPrinter.show_task(f"Failed to generate {layout_name} layout", "error")
+                StatusPrinter.show_task(f"{os.path.basename(connections_file)}: Failed {layout_name}", "error")
                 success = False
         
         # Detailed performance log
@@ -3261,23 +3347,65 @@ def main():
     hide_node_names = 'n' in args.o
     hide_connection_layers = 'c' in args.o
     
-    # Process each file with new options
+    # PERFORMANCE BOOST: Parallel file processing
+    # We use ProcessPoolExecutor to handle multiple files in parallel
     results = []
-    for connections_file in valid_files:
-        results.append(process_file(
-            connections_file=connections_file, 
-            config=config, 
-            include_orphans=args.y, 
-            layouts_choice=layouts_choice, 
-            regionalization=args.r,
-            elements_file=elements_file,
-            locations_file=locations_file,
-            hide_node_names=hide_node_names,
-            hide_connection_layers=hide_connection_layers,
-            ignore_optional=args.d,
-            filter_string=args.f,
-            output_dir=args.out
-        ))
+    
+    # Set total tasks for progress bar: number of files * layouts
+    StatusPrinter.set_total_tasks(len(valid_files) * len(layouts_choice))
+    
+    # Calculate number of workers based on CPU count and file count
+    max_workers = min(len(valid_files), os.cpu_count() or 4)
+    
+    if max_workers > 1 and len(valid_files) > 1:
+        logger.info(f"🚀 Starting parallel processing with {max_workers} workers")
+        with ProcessPoolExecutor(max_workers=max_workers) as executor:
+            # Prepare arguments for each process_file call
+            future_to_file = {
+                executor.submit(
+                    process_file, 
+                    connections_file=f,
+                    config=config, 
+                    include_orphans=args.y, 
+                    layouts_choice=layouts_choice, 
+                    regionalization=args.r,
+                    elements_file=elements_file,
+                    locations_file=locations_file,
+                    hide_node_names=hide_node_names,
+                    hide_connection_layers=hide_connection_layers,
+                    ignore_optional=args.d,
+                    filter_string=args.f,
+                    output_dir=args.out
+                ): f for f in valid_files
+            }
+            
+            for future in as_completed(future_to_file):
+                f_name = future_to_file[future]
+                try:
+                    res = future.result()
+                    if res:
+                        results.append(res)
+                except Exception as exc:
+                    logger.error(f"❌ File {f_name} generated an exception: {exc}")
+    else:
+        # Sequential processing for single files or single cores
+        for connections_file in valid_files:
+            res = process_file(
+                connections_file=connections_file, 
+                config=config, 
+                include_orphans=args.y, 
+                layouts_choice=layouts_choice, 
+                regionalization=args.r,
+                elements_file=elements_file,
+                locations_file=locations_file,
+                hide_node_names=hide_node_names,
+                hide_connection_layers=hide_connection_layers,
+                ignore_optional=args.d,
+                filter_string=args.f,
+                output_dir=args.out
+            )
+            if res:
+                results.append(res)
     
     # Final execution report
     success_count = sum(1 for r in results if r.get("success"))
