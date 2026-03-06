@@ -32,23 +32,25 @@ A tool for the automated generation of network diagrams (.drawio) starting from:
 
 ## ⚙️ Dependency Installation
 
-# Windows
-1. Open the Microsoft Store
-2. Search for "Python 3.12+"
-3. Click Install
-4. Install Python dependencies (CMD/PowerShell):
-```bash
-python -m pip install networkx chardet numpy pillow psutil scipy
-```
+The tool includes an **automatic dependency validator**. If any required packages are missing, the script will provide the specific installation commands for your operating system.
 
-# Linux (Debian/Ubuntu)
-1. Install Python 3 and pip (apt):
+### 🪟 Windows
+1. Open the Microsoft Store, search for "Python 3.12+" and click **Install**.
+2. Open the Command Prompt (CMD) or PowerShell and install dependencies:
 ```bash
-sudo apt update && sudo apt install python3 pip python3-tk -y
+python -m pip install --upgrade pip
+python -m pip install networkx chardet numpy scipy psutil
 ```
-2. Install Python dependencies:
+> **Note**: If `python` is not recognized, try using `py`.
+
+### 🐧 Linux (Debian/Ubuntu)
+1. Install system tools and dependencies:
 ```bash
-python3 -m pip install networkx chardet numpy pillow psutil scipy
+sudo apt update && sudo apt install python3-pip python3-tk python3-venv -y
+```
+2. Install Python packages:
+```bash
+pip3 install networkx chardet numpy scipy psutil
 ```
 
 ## 🚀 How to Use

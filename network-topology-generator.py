@@ -10,8 +10,79 @@ import warnings
 warnings.filterwarnings("ignore", category=RuntimeWarning, module="networkx")
 
 import sys
-import csv
 import os
+
+def check_dependencies():
+    missing_packages = []
+    
+    try:
+        import networkx
+    except ImportError:
+        missing_packages.append("networkx")
+        
+    try:
+        import chardet
+    except ImportError:
+        missing_packages.append("chardet")
+
+    try:
+        import numpy
+    except ImportError:
+        missing_packages.append("numpy (necessário para o layout orgânico)")
+
+    try:
+        import scipy
+    except ImportError:
+        missing_packages.append("scipy (necessário para o layout orgânico)")
+        
+    try:
+        import tkinter
+    except ImportError:
+        missing_packages.append("tkinter (pacote nativo no Windows, python3-tk no Linux)")
+
+    if missing_packages:
+        print("\n\033[91m❌ ERRO: Dependências do Python ausentes!\033[0m")
+        print("Os seguintes pacotes obrigatórios não foram encontrados no ambiente:")
+        for pkg in missing_packages:
+            print(f"  - {pkg}")
+            
+        print("\n\033[93m💡 DICA: O 'pip' (gerenciador de pacotes do Python) é necessário para instalar as bibliotecas.\033[0m")
+        print("Se o comando 'pip' ou 'pip3' não for reconhecido, siga as instruções de instalação abaixo.")
+        
+        print("\n\033[96m📦 PROCEDIMENTO DE INSTALAÇÃO NO WINDOWS:\033[0m")
+        print("1. O Tkinter já vem instalado por padrão no instalador oficial do Python.")
+        print("2. Abra o Prompt de Comando (cmd) ou PowerShell e atualize o pip:")
+        print("   python -m pip install --upgrade pip")
+        print("3. Instale as bibliotecas:")
+        print("   python -m pip install networkx chardet numpy scipy psutil")
+        print("   *Nota: Se 'python' não for reconhecido, tente 'py'. Lembre-se de marcar 'Add Python to PATH' ao instalar o Python.")
+        
+        print("\n\033[96m📦 PROCEDIMENTO DE INSTALAÇÃO NO DEBIAN/UBUNTU/MINT:\033[0m")
+        print("1. Instale as ferramentas e o pip do sistema:")
+        print("   sudo apt-get update")
+        print("   sudo apt-get install -y python3-pip python3-tk python3-venv")
+        print("")
+        print("2. (Recomendado) Crie um ambiente virtual para instalar os pacotes Python de forma isolada:")
+        print("   python3 -m venv venv")
+        print("   source venv/bin/activate")
+        print("   pip install networkx chardet numpy scipy psutil")
+        print("")
+        print("3. (Alternativa) Instalar diretamente para o usuário na máquina:")
+        print("   pip3 install networkx chardet numpy scipy psutil   # ou: python3 -m pip install networkx chardet numpy scipy psutil")
+        
+        print("\n\033[96m📦 PROCEDIMENTO DE INSTALAÇÃO EM OUTROS LINUX (Fedora/RHEL/Arch):\033[0m")
+        print("1. Instale o pacote do pip e o tkinter via gerenciador da distribuição:")
+        print("   sudo dnf install python3-pip python3-tkinter  # Fedora/RHEL/CentOS")
+        print("   sudo pacman -S python-pip tk                  # Arch Linux")
+        print("")
+        print("2. Instale os módulos Python:")
+        print("   pip3 install networkx chardet numpy scipy psutil   # ou: python3 -m pip install networkx chardet numpy scipy psutil")
+        print("\n")
+        sys.exit(1)
+
+check_dependencies()
+
+import csv
 import re
 import math
 import logging
@@ -30,7 +101,7 @@ import threading
 import multiprocessing
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
-versionctr = "1.1.2"
+versionctr = "1.1.3"
 REPO_URL = "https://github.com/flashbsb/network-topology-generator"
 
 # =====================================================

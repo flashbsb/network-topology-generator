@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.3] - 2026-03-06
+### Added
+- **Automatic Dependency Validator**: Integrated a robust pre-import check for required packages (`networkx`, `chardet`, `numpy`, `scipy`, `tkinter`).
+- **Interactive Installation Guide**: If dependencies are missing, the script now provides platform-specific installation commands for Windows, Debian/Ubuntu, Fedora, and Arch Linux, including instructions for `pip` and system packages.
+
 ## [1.1.2] - 2026-03-06
 ### Added
 - **Empty Layer Pruning**: Layers without any elements (nodes or connections) are now automatically omitted from the generated Draw.io diagrams and Legend to reduce clutter.
