@@ -10,6 +10,7 @@ The **Network Topology Generator for Draw.io** is an advanced tool that converts
 🔧 **Highlighted Features**:
 * 4 layout algorithms: Circular, Organic, Geographic, and Hierarchical
 * Graphical User Interface (GUI) and Command Line Interface (CLI)
+* **New**: Modern CLI presentation with task checklist and ANSI colors
 * Automatic regionalization (e.g., CORE → CORE_SOUTHEAST)
 * Automatic legends and multiple pages/views
 * Advanced customization via `config.json`
@@ -53,9 +54,9 @@ python3 -m pip install networkx chardet numpy pillow psutil scipy
 ## 🚀 How to Use
 
 ### Download files
-- network-topology-generator.py
-- config.json
-- RunGui.bat (optional, windows script to run the GUI directly)
+- `network-topology-generator.py`
+- `config/` folder (containing `config.json`, `elements.csv`, etc.)
+- `RunGui.bat` (optional, windows script to run the GUI directly)
 
 ### Graphical Mode (GUI)
 ```bash
@@ -68,18 +69,21 @@ python network-topology-generator.py [OPTIONS] connections.csv connections2.csv 
 ```
 
 ### ⚡ CLI Options
-| Option | Description | Example |
-|--------|-------------|---------|
-| `-y` | Include nodes without connections (orphans) | `-y` |
-| `-t cog` | Layouts (c=circular, o=organic, g=geographic, h=hierarchical) | `-t co` |
-| `-r` | Enable regionalization | `-r` |
-| `-g DIR` | Directory containing CSV files | `-g data/` |
-| `-w PATH` | Custom directory for output (Draw.io and logs) | `-w output/` |
-| `-o nc` | Options: n (no names), c (hide connections) | `-o n` |
-| `-d` | Ignore customizations in CSV files | `-d` |
-| `-f FILTER` | Filter elements/layers | `-f "in:RTIC;RTOC"` |
-| `-l` | Generate log files (General and Error logs) | `-l` |
-| `-v` | Verbose mode (logs on screen) | `-v` |
+| Option | Description | Default | Example |
+|--------|-------------|---------|---------|
+| `-y` | Include nodes without connections (orphans) | `False` | `-y` |
+| `-t cog` | Layouts (c=circ, o=org, g=geo, h=hier) | `cogh` | `-t co` |
+| `-r` | Enable regionalization | `False` | `-r` |
+| `-g DIR` | Directory containing CSV files | `None` | `-g data/` |
+| `-e PATH` | Path to elements file | `config/elements.csv` | `-e elements.csv` |
+| `-s PATH` | Path to localities file | `config/locations.csv` | `-s locations.csv` |
+| `-c PATH` | Path to configuration file | `config/config.json` | `-c config.json` |
+| `-w PATH` | Custom directory for output | `.` | `-w output/` |
+| `-o nc` | Options: n (no names), c (hide connections) | `""` | `-o n` |
+| `-d` | Ignore customizations in CSV files | `False` | `-d` |
+| `-f FILTER` | Filter elements/layers | `None` | `-f "in:RTIC;RTOC"` |
+| `-l` | Generate log files | `False` | `-l` |
+| `-v` | Verbose mode (logs on screen) | `False` | `-v` |
 
 ## 📂 Input Files
 
@@ -236,7 +240,7 @@ graph TD
 ```
 
 🔗 **Official Repository**:  
-https://github.com/flashbsb/Network-Topology-Generator-for-Drawio
+https://github.com/flashbsb/network-topology-generator
 
 📜 **License**:  
-[MIT License](https://github.com/flashbsb/Network-Topology-Generator-for-Drawio/blob/main/LICENSE)
+[MIT License](https://github.com/flashbsb/network-topology-generator/blob/main/LICENSE)

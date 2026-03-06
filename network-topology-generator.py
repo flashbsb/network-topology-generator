@@ -23,7 +23,59 @@ from collections import defaultdict
 import platform
 import glob
 
-versionctr = "B1.33"
+versionctr = "1.0.1"
+REPO_URL = "https://github.com/flashbsb/network-topology-generator"
+
+# =====================================================
+# ANSI COLORS AND TERMINAL STYLING
+# =====================================================
+class Colors:
+    HEADER = '\033[95m'
+    BLUE = '\033[94m'
+    CYAN = '\033[96m'
+    GREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+    GRAY = '\033[90m'
+
+class StatusPrinter:
+    """Helper for pretty printing status in the terminal"""
+    @staticmethod
+    def show_task(message, status="in_progress"):
+        prefix = ""
+        if status == "in_progress":
+            prefix = f"{Colors.BLUE}🌀 {message}...{Colors.ENDC}"
+        elif status == "success":
+            prefix = f"{Colors.GREEN}✅ {message}{Colors.ENDC}"
+        elif status == "warning":
+            prefix = f"{Colors.WARNING}⚠️  {message}{Colors.ENDC}"
+        elif status == "error":
+            prefix = f"{Colors.FAIL}❌ {message}{Colors.ENDC}"
+        elif status == "info":
+            prefix = f"{Colors.CYAN}ℹ️  {message}{Colors.ENDC}"
+        
+        print(prefix)
+
+    @staticmethod
+    def show_header():
+        print(f"\n{Colors.BOLD}{Colors.HEADER}===================================================={Colors.ENDC}")
+        print(f"{Colors.BOLD}{Colors.HEADER}   NETWORK TOPOLOGY GENERATOR - {versionctr}{Colors.ENDC}")
+        print(f"{Colors.BOLD}{Colors.HEADER}===================================================={Colors.ENDC}\n")
+
+    @staticmethod
+    def show_summary(total_time, total_files, success_count, nodes_count=0, connections_count=0):
+        print(f"\n{Colors.BOLD}{Colors.CYAN}📊 EXECUTION SUMMARY{Colors.ENDC}")
+        print(f"{Colors.GRAY}----------------------------------------------------{Colors.ENDC}")
+        print(f"⏱️  Total time:     {Colors.BOLD}{total_time:.2f}s{Colors.ENDC}")
+        print(f"📂 Files processed: {Colors.BOLD}{success_count}/{total_files}{Colors.ENDC}")
+        if nodes_count or connections_count:
+            print(f"🏗️  Infrastructure: {Colors.BOLD}{nodes_count} nodes, {connections_count} connections{Colors.ENDC}")
+        print(f"{Colors.GRAY}----------------------------------------------------{Colors.ENDC}")
+        print(f"🔗 Repository:     {Colors.UNDERLINE}{REPO_URL}{Colors.ENDC}")
+        print(f"✨ {Colors.GREEN}Processing completed successfully!{Colors.ENDC}\n")
 
 # Try to import psutil for memory monitoring, but it's not mandatory
 PSUTIL_AVAILABLE = False
@@ -274,8 +326,8 @@ def run_gui():
             # Default settings
             self.config = self.load_config()
             self.connection_files = []
-            self.elements_file = "elements.csv" if os.path.exists("elements.csv") else ""
-            self.locations_file = "locations.csv" if os.path.exists("locations.csv") else ""
+            self.elements_file = "config/elements.csv" if os.path.exists("config/elements.csv") else ("elements.csv" if os.path.exists("elements.csv") else "")
+            self.locations_file = "config/locations.csv" if os.path.exists("config/locations.csv") else ("locations.csv" if os.path.exists("locations.csv") else "")
             
             # Control variables
             self.include_orphans = tk.BooleanVar(value=False)
@@ -294,9 +346,9 @@ def run_gui():
             self.filter_value = tk.StringVar()
             
             # Check resource availability
-            self.has_elements = os.path.exists("elements.csv")
-            self.has_locations = os.path.exists("locations.csv")
-            self.has_config = os.path.exists("config.json")
+            self.has_elements = os.path.exists("config/elements.csv") or os.path.exists("elements.csv")
+            self.has_locations = os.path.exists("config/locations.csv") or os.path.exists("locations.csv")
+            self.has_config = os.path.exists("config/config.json") or os.path.exists("config.json")
             
             # Create interface
             self.create_widgets()
@@ -309,7 +361,7 @@ def run_gui():
             
         def load_config(self):
             """Tries to load config.json or returns default if not exists"""
-            config_file = 'config.json'
+            config_file = 'config/config.json' if os.path.exists('config/config.json') else 'config.json'
             default_config = {
                 "LAYER_STYLES": {},
                 "LAYER_COLORS": {"default": "#036897"},
@@ -2760,7 +2812,8 @@ def process_file(connections_file, config, include_orphans=False, layouts_choice
         locations_file (str): Path to localities file
     """
     file_start = time.perf_counter()
-    logger.info("⏱️ [START] Processing file: %s", connections_file)
+    StatusPrinter.show_task(f"Processing: {os.path.basename(connections_file)}", "in_progress")
+    logger.debug("⏱️ [START] Processing file: %s", connections_file)
     logger.debug("Parameters: orphans=%s, layouts=%s, regional=%s, hide_names=%s, hide_cnx=%s",
                 include_orphans, layouts_choice, regionalization, 
                 hide_node_names, hide_connection_layers)
@@ -2783,9 +2836,11 @@ def process_file(connections_file, config, include_orphans=False, layouts_choice
             return False
             
         if not generator.read_elements():
+            StatusPrinter.show_task("Error reading elements.csv", "error")
             return False
             
         if not generator.read_connections():
+            StatusPrinter.show_task("Error reading connections.csv", "error")
             return False
             
         base_name = os.path.splitext(os.path.basename(connections_file))[0]
@@ -2829,13 +2884,17 @@ def process_file(connections_file, config, include_orphans=False, layouts_choice
         # Generate only selected layouts
         for layout_key, layout_name in layouts_to_process:
             output_file = os.path.join(output_dir, f"{base_name}_{timestamp}_{layout_key}.drawio")
+            StatusPrinter.show_task(f"Generating {layout_name} layout", "in_progress")
             if generator.generate_drawio(output_file, layout_key):
                 generated_layouts.append(layout_name)
+                # StatusPrinter.show_task(f"{layout_name} layout generated", "success")
             else:
+                StatusPrinter.show_task(f"Failed to generate {layout_name} layout", "error")
                 success = False
         
         # Detailed performance log
         file_time = time.perf_counter() - file_start
+        StatusPrinter.show_task(f"Success: {os.path.basename(connections_file)} ({len(generator.nodes)} nodes, {len(generator.connections)} connections)", "success")
         logger.info("✅ [SUCCESS] File processed in %.2fs | Layouts: %s | Nodes: %d | Connections: %d",
                   file_time, ', '.join(generated_layouts), 
                   len(generator.nodes), len(generator.connections))
@@ -2866,12 +2925,16 @@ def process_file(connections_file, config, include_orphans=False, layouts_choice
             logger.debug("%d elements moved to review layer: %s", 
                           len(nodes_review), nodes_list)
         
-        return success
+        return {
+            "success": success,
+            "nodes": len(generator.nodes),
+            "connections": len(generator.connections)
+        }
     except Exception as e:
         logger.exception("💥 [FAILURE] Error during processing")
         logger.error("Context: layouts=%s, regional=%s, elements=%s",
                    layouts_choice, regionalization, elements_file)
-        return False
+        return {"success": False, "nodes": 0, "connections": 0}
 
 def main():
     global_start = time.perf_counter()
@@ -2926,13 +2989,13 @@ def main():
     parser.add_argument(
         '-e', 
         metavar='ELEMENTS', 
-        default='elements.csv', 
+        default='config/elements.csv' if os.path.exists('config/elements.csv') else 'elements.csv', 
         help='Path to elements file (optional)'
     )
     parser.add_argument(
         '-s', 
         metavar='LOCALITIES', 
-        default='locations.csv', 
+        default='config/locations.csv' if os.path.exists('config/locations.csv') else 'locations.csv', 
         help='Path to localities file (optional)'
     )
     parser.add_argument(
@@ -2954,8 +3017,8 @@ def main():
     parser.add_argument(
      '-c',
      type=str,
-     default='config.json',
-     help='Path to configuration file (default: config.json)'
+     default='config/config.json' if os.path.exists('config/config.json') else 'config.json',
+     help='Path to configuration file (default: config/config.json)'
     )
     
     parser.add_argument(
@@ -3019,8 +3082,8 @@ def main():
     # ================================================
     if base_dir:
         # Forces the use of the base directory for elements/localities
-        elements_file = os.path.join(base_dir, "elements.csv")
-        locations_file = os.path.join(base_dir, "locations.csv")
+        elements_file = os.path.join(base_dir, "elements.csv") if os.path.exists(os.path.join(base_dir, "elements.csv")) else os.path.join(base_dir, "config", "elements.csv")
+        locations_file = os.path.join(base_dir, "locations.csv") if os.path.exists(os.path.join(base_dir, "locations.csv")) else os.path.join(base_dir, "config", "locations.csv")
         logger.info(f"Using fixed paths in base directory (-g active):")
         logger.info(f" - elements: {elements_file}")
         logger.info(f" - localities: {locations_file}")
@@ -3039,14 +3102,23 @@ def main():
             full_path = apply_base_dir(f)
             if os.path.exists(full_path):
                 connections_files.append(full_path)
+            elif os.path.exists(os.path.join("config", full_path)):
+                connections_files.append(os.path.join("config", full_path))
             else:
                 logger.error(f"File not found: {full_path}")
     elif base_dir:
         # -g mode: searches ONLY for "connections*.csv" in the base directory
         logger.info("Searching for connection files in the base directory...")
-        search_path = os.path.join(base_dir, "connections*.csv")
-        logger.debug(f"Search pattern: {search_path}")
-        found_files = glob.glob(search_path, recursive=False)
+        # Check in base_dir and base_dir/config
+        search_paths = [
+            os.path.join(base_dir, "connections*.csv"),
+            os.path.join(base_dir, "config", "connections*.csv")
+        ]
+        
+        found_files = []
+        for search_path in search_paths:
+            logger.debug(f"Search pattern: {search_path}")
+            found_files.extend(glob.glob(search_path, recursive=False))
         
         # Remove duplicates and validate
         seen = set()
@@ -3061,6 +3133,22 @@ def main():
                 logger.info(f" - {os.path.basename(f)}")
         else:
             logger.warning("No connection files found in the directory")
+    else:
+        # No files provided and no -g: check "config/" directory for default "connections.csv" or "connections*.csv"
+        logger.info("Searching for default connection files in 'config/' directory...")
+        search_path = os.path.join("config", "connections*.csv")
+        found_files = glob.glob(search_path)
+        
+        seen = set()
+        for f in found_files:
+            if os.path.isfile(f) and f not in seen:
+                seen.add(f)
+                connections_files.append(f)
+        
+        if connections_files:
+            logger.info(f"Found {len(connections_files)} connection file(s) in 'config/':")
+            for f in connections_files:
+                logger.info(f" - {os.path.basename(f)}")
 
     # ================================================
     # FINAL PATH VERIFICATION
@@ -3078,6 +3166,9 @@ def main():
         logger.info("No connection files found, starting GUI")
         run_gui()
         return
+
+    # Show Header for CLI
+    StatusPrinter.show_header()
 
     # Remove existing handlers
     for handler in logger.handlers[:]:
@@ -3189,9 +3280,15 @@ def main():
         ))
     
     # Final execution report
-    success_count = sum(1 for r in results if r)
+    success_count = sum(1 for r in results if r.get("success"))
     total_files = len(valid_files)
     total_time = time.perf_counter() - global_start
+    
+    # Calculate total nodes and connections for summary
+    total_nodes = sum(r.get("nodes", 0) for r in results)
+    total_connections = sum(r.get("connections", 0) for r in results)
+    
+    StatusPrinter.show_summary(total_time, total_files, success_count, total_nodes, total_connections)
     
     logger.info("✅ PROCESSING COMPLETED")
     logger.info("   Files processed: %d/%d successfully", success_count, total_files)

@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.1] - 2026-03-06
+### Added
+- Integrated `StatusPrinter` for a much cleaner and visually informative CLI output with ANSI colors and task progress indicators.
+- Implementation of a global `REPO_URL` constant for consistent repository referencing.
+
+### Changed
+- Refactored project structure to use a dedicated `config/` directory for configuration files (`connections.csv`, `elements.csv`, `locations.csv`, `config.json`).
+- Updated the script to automatically search for configuration files in the `config/` directory by default.
+- Enhanced "Smart Search" logic for connection files in the CLI, scanning both the root and `config/` folders.
+- Improved the final execution summary to include aggregated statistics for processed nodes and connections.
+
 ## [B1.33] - 2026-03-06
 ### Added
 - New CLI argument `-w / --out` to specify a custom output directory for diagrams and logs.
