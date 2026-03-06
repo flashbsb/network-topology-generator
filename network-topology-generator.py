@@ -2111,10 +2111,9 @@ class TopologyGenerator:
         angle_step = 0.5
         
         for idx, node in enumerate(nodes_without_coords):
-            # Mover para camada de REV se já não estiver em uma camada específica de erro
-            old_layer = self.nodes[node]['layer']
-            if old_layer != "TO_REVIEW":
-                 self._update_node_layer(node, old_layer, "TO_REVIEW", 10)
+            # NOTE: We calculate their placement in a spiral for geographic layout
+            # but we DO NOT permanently change their layer to "TO_REVIEW" here.
+            # Doing so would cause them to disappear from their proper layers in subsequent layouts.
                  
             angle = idx * angle_step
             radius = spiral_radius + idx * 50
