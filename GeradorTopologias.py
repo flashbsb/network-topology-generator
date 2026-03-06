@@ -23,7 +23,7 @@ from collections import defaultdict
 import platform
 import glob
 
-versionctr = "B1.31"
+versionctr = "B1.32"
 
 # Tente importar psutil para monitoramento de memória, mas não é obrigatório
 PSUTIL_AVAILABLE = False
@@ -2445,7 +2445,7 @@ class TopologyGenerator:
                 page_content.extend([
                     f'        <mxCell id="{bg_id}" value="" style="shape=image;image={bg_cfg["url"]};',
                     f'          imageAspect=0;aspect=fixed;verticalLabelPosition=bottom;verticalAlign=top;',
-                    f'          opacity={bg_cfg.get("opacity", 30)};" vertex="1" parent="1" visible="1">',
+                    f'          opacity={bg_cfg.get("opacity", 30)};" vertex="1" parent="1" visible="0">',
                     f'          <mxGeometry x="{bg_cfg["x"]}" y="{bg_cfg["y"]}" width="{bg_cfg["width"]}" height="{bg_cfg["height"]}" as="geometry"/>',
                     f'        </mxCell>'
                 ])

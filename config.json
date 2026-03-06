@@ -7,7 +7,8 @@
         "RTED": {"camada": "EDGE", "nivel": 5},
         "RTAC": {"camada": "ACCESS-EDGE", "nivel": 6},
 		"RTAG": {"camada": "ACCESS-EDGE", "nivel": 6},
-        "DWDM": {"camada": "DWDM", "nivel": 7},
+        "DW": {"camada": "DWDM", "nivel": 7},
+        "ELS": {"camada": "DWDM", "nivel": 7},
         "RTMA": {"camada": "METRO", "nivel": 8},
         "EAF": {"camada": "METRO", "nivel": 8},
         "SWAC": {"camada": "METRO", "nivel": 8},
@@ -17,11 +18,18 @@
 		"SWL2": {"camada": "METRO", "nivel": 8},
 		"SWAG": {"camada": "METRO", "nivel": 8},
 		"SWCE": {"camada": "METRO", "nivel": 9},
+		"CDN": {"camada": "CDN", "nivel": 10},
+		"SW-CSDC": {"camada": "DC", "nivel": 10},
 		"PTT": {"camada": "PTT", "nivel": 10},
+		"ISP": {"camada": "ISP", "nivel": 10},
+		"TRANSITO": {"camada": "TRANSITO", "nivel": 10},
+		"PEERING": {"camada": "PEERING", "nivel": 10},
         "default": {"camada": "default", "nivel": 10}
     },
 	"LAYER_COLORS": {
 		"PTT": "#000000",
+		"ISP": "#000000",
+		"TRANSITO": "#000000",
         "INNER-CORE": "#036897",
         "OUTER-CORE": "#0385BE",
         "REFLECTOR": "#775397",
@@ -31,6 +39,8 @@
         "ACCESS-EDGE": "#36B136",
         "DWDM": "#6600CC",
         "METRO": "#005073",
+		"CDN": "#005073",
+		"DC": "#005073",
         "default": "#036897"
     },
     "LAYER_STYLES": {
@@ -42,6 +52,22 @@
             "width": 50,
             "height": 50
         },
+        "ISP": {
+            "shape": "mxgraph.cisco19.rect",
+            "prIcon": "router",	
+            "fillColor": "#000000",
+            "strokeColor": "#FFFFFF",
+            "width": 50,
+            "height": 50
+        },
+        "TRANSITO": {
+            "shape": "mxgraph.cisco19.rect",
+            "prIcon": "router",	
+            "fillColor": "#000000",
+            "strokeColor": "#FFFFFF",
+            "width": 50,
+            "height": 50
+        },		
         "INNER-CORE": {
             "shape": "mxgraph.cisco19.rect",
             "prIcon": "router",	
@@ -113,6 +139,21 @@
             "width": 50,
             "height": 50
         },
+		"CDN": {
+            "shape": "mxgraph.alibaba_cloud.pcdn_p2p_cdn",
+            "fillColor": "none",
+            "strokeColor": "#005073",
+            "width": 50,
+            "height": 50
+        },
+		"DC": {
+            "shape": "mxgraph.cisco19.rect",
+            "prIcon": "l2_switch",
+            "fillColor": "none",
+            "strokeColor": "#005073",
+            "width": 50,
+            "height": 50
+        },
         "default": {
             "shape": "mxgraph.cisco.routers.router",
             "fillColor": "#036897",
@@ -134,11 +175,11 @@
         "fontStyle": "1"
     },
     "CONNECTION_STYLES": {
-        "INNER-CORE": {"color": "#036897", "strokeWidth": "2"},
-        "OUTER-CORE": {"color": "#0385BE", "strokeWidth": "2"},
-        "REFLECTOR": {"color": "#775397", "strokeWidth": "1.5"},
-        "REFLECTOR-VPN": {"color": "#B266FF", "strokeWidth": "1.5"},
-        "PEERING": {"color": "#E98C2F", "strokeWidth": "1.5"},
+        "INNER-CORE": {"color": "#036897", "strokeWidth": "1"},
+        "OUTER-CORE": {"color": "#0385BE", "strokeWidth": "1"},
+        "REFLECTOR": {"color": "#775397", "strokeWidth": "1"},
+        "REFLECTOR-VPN": {"color": "#B266FF", "strokeWidth": "1"},
+        "PEERING": {"color": "#E98C2F", "strokeWidth": "1"},
         "EDGE": {"color": "#228122", "strokeWidth": "1"},
         "ACCESS-EDGE": {"color": "#36B136", "strokeWidth": "1"},
         "DWDM": {"color": "#6600CC", "strokeWidth": "1"},
@@ -146,7 +187,7 @@
         "default": {"color": "#000000", "strokeWidth": "1"}
     },
     "CONNECTION_STYLE_BASE": {
-        "endArrow": "classic",
+        "endArrow": "none",
         "html": "1",
         "rounded": "0",
         "dashed": "0",
@@ -159,9 +200,10 @@
         {"name": "GERAL", "visible_layers": null},
         {"name": "CORE", "visible_layers": ["INNER-CORE", "OUTER-CORE"]},
         {"name": "REFLECTOR +INNER", "visible_layers": ["INNER-CORE", "REFLECTOR-VPN", "REFLECTOR"]},
-		{"name": "PEERING +INNER", "visible_layers": ["INNER-CORE", "PEERING", "PTT"]},
+		{"name": "PEERING TRANSITO +INNER", "visible_layers": ["INNER-CORE", "PEERING", "TRANSITO", "PTT", "ISP"]},
         {"name": "EDGE +CORE", "visible_layers": ["INNER-CORE", "OUTER-CORE", "EDGE", "ACCESS-EDGE"]},
-        {"name": "METRO +EDGE", "visible_layers": ["EDGE", "ACCESS-EDGE","METRO"]}
+        {"name": "METRO +EDGE", "visible_layers": ["EDGE", "ACCESS-EDGE","METRO"]},
+		{"name": "CDN", "visible_layers": ["DC", "CDN"]}
     ],
     "CIRCULAR_LAYOUT": {
 		"locked": 1,
@@ -188,12 +230,12 @@
     },
     "GEOGRAPHIC_LAYOUT": {
 		"locked": 0,
-        "node_scale_factor": 1,
+        "node_scale_factor": 0.5,
         "canvas_width": 5000,
         "canvas_height": 5000,
         "margin": 50,
-        "min_distance": 100,
-        "min_node_distance": 100,
+        "min_distance": 20,
+        "min_node_distance": 20,
         "background_image": {
             "url": "https://upload.wikimedia.org/wikipedia/commons/1/10/Brazil_Blank_Map.svg",
             "x": 0,
