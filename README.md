@@ -1,110 +1,112 @@
-# 🌐 GERADOR DE TOPOLOGIAS DE REDE PARA O DRAWIO
+# 🌐 NETWORK TOPOLOGY GENERATOR FOR DRAW.IO
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ![Python Version](https://img.shields.io/badge/python-3.8+-blue.svg)
 
-### 🧩 Transforme dados de rede em diagramas profissionais com um clique
+### 🧩 Transform network data into professional diagrams with a single click
 
-O **Gerador de Topologias de Redes para Draw.io** é uma ferramenta avançada que converte arquivos CSV em diagramas `.drawio` completos e organizados. Ideal para ISPs, operadoras de telecomunicações, administradores de redes corporativas e profissionais de infraestrutura.
+The **Network Topology Generator for Draw.io** is an advanced tool that converts CSV files into complete, organized `.drawio` diagrams. Ideal for ISPs, telecommunication operators, enterprise network administrators, and infrastructure professionals.
 
-🔧 **Recursos em destaque**:
-* 4 algoritmos de layout: Circular, Orgânico, Geográfico e Hierárquico
-* Interface gráfica (GUI) e linha de comando (CLI)
-* Regionalização automática (ex: CORE → CORE_SUDESTE)
-* Legendas automáticas e múltiplas páginas/visões
-* Personalização avançada via `config.json`
-* Suporte a mapas geográficos e elementos DWDM/PTT
-* Filtragem avançada de elementos e camadas
-* Opção para ocultar nomes dos nós e camadas de conexão
-* Tratamento especial para elementos sem localização geográfica
-* Prevenção de sobreposição de nós em layout geográfico
+🔧 **Highlighted Features**:
+* 4 layout algorithms: Circular, Organic, Geographic, and Hierarchical
+* Graphical User Interface (GUI) and Command Line Interface (CLI)
+* Automatic regionalization (e.g., CORE → CORE_SOUTHEAST)
+* Automatic legends and multiple pages/views
+* Advanced customization via `config.json`
+* Support for geographic maps and DWDM/PTT elements
+* Advanced element and layer filtering
+* Option to hide node names and connection layers
+* Special handling for elements lacking geographic location
+* Node overlap prevention in the geographic layout
 
 ---
 
-## 🔍 Visão Geral
-Ferramenta para geração automatizada de diagramas de rede (.drawio) a partir de:
-- Conexões entre equipamentos (`conexoes.csv`)
-- Dados dos equipamentos (`elementos.csv`)
-- Localizações geográficas (`localidades.csv`)
+## 🔍 Overview
+A tool for the automated generation of network diagrams (.drawio) starting from:
+- Connections between equipment (`connections.csv`)
+- Equipment data (`elements.csv`)
+- Geographic locations (`locations.csv`)
 
-![Screenshot da Interface](docs/images/gui-screenshot.png)
+![GUI Screenshot](docs/images/gui-screenshot.png)
 
-## ⚙️ Instalação das dependências para execução do script
+## ⚙️ Dependency Installation
 
 # Windows
-1. Abra Microsoft Store
-2. Busque "Python 3.12+"
-3. Clique em Instalar
-4. Instalar dependências Python (CMD/PowerShell):
+1. Open the Microsoft Store
+2. Search for "Python 3.12+"
+3. Click Install
+4. Install Python dependencies (CMD/PowerShell):
 ```bash
-python -m pip install networkx chardet numpy pillow psutil
+python -m pip install networkx chardet numpy pillow psutil scipy
 ```
 
 # Linux (Debian/Ubuntu)
-1. Instalar Python 3 e pip (apt):
+1. Install Python 3 and pip (apt):
 ```bash
 sudo apt update && sudo apt install python3 pip python3-tk -y
 ```
-2. Instalar dependências Python
+2. Install Python dependencies:
 ```bash
-python3 -m pip install networkx chardet numpy pillow psutil
+python3 -m pip install networkx chardet numpy pillow psutil scipy
 ```
 
-## 🚀 Como Usar
+## 🚀 How to Use
 
-### Faça o download
-- GeradorTopologias.py
+### Download files
+- network-topology-generator.py
 - config.json
-- RunGui.bat (opcional, script para windows que executa a GUI diretamente)
+- RunGui.bat (optional, windows script to run the GUI directly)
 
-### Modo Gráfico (GUI)
+### Graphical Mode (GUI)
 ```bash
-python GeradorTopologias.py
+python network-topology-generator.py
 ```
 
-### Modo Terminal (CLI)
+### Terminal Mode (CLI)
 ```bash
-python GeradorTopologias.py [OPÇÕES] arquivo_conexoes.csv arquivo_conexoes2.csv arquivo_conexoesN.csv
+python network-topology-generator.py [OPTIONS] connections.csv connections2.csv connectionsN.csv
 ```
 
-### ⚡ Opções da CLI
-| Opção | Descrição | Exemplo |
-|-------|-----------|---------|
-| `-y`  | Incluir nós sem conexões | `-y` |
-| `-t cog` | Layouts (c=circular, o=orgânico, g=geográfico, h=hierárquico) | `-t co` |
-| `-r`  | Ativar regionalização | `-r` |
-| `-g DIR` | Diretório com arquivos CSV | `-g dados/` |
-| `-o nc` | Opções: n (sem nomes), c (ocultar conexões) | `-o n` |
-| `-d`  | Ignorar customizações nos CSV | `-d` |
-| `-f FILTRO` | Filtrar elementos/camadas | `-f "in:RTIC;RTOC"` |
-| `-l`  | Gerar arquivo de logs | `-l` |
-| `-v`  | Modo verboso | `-v` |
+### ⚡ CLI Options
+| Option | Description | Example |
+|--------|-------------|---------|
+| `-y` | Include nodes without connections (orphans) | `-y` |
+| `-t cog` | Layouts (c=circular, o=organic, g=geographic, h=hierarchical) | `-t co` |
+| `-r` | Enable regionalization | `-r` |
+| `-g DIR` | Directory containing CSV files | `-g data/` |
+| `-w PATH` | Custom directory for output (Draw.io and logs) | `-w output/` |
+| `-o nc` | Options: n (no names), c (hide connections) | `-o n` |
+| `-d` | Ignore customizations in CSV files | `-d` |
+| `-f FILTER` | Filter elements/layers | `-f "in:RTIC;RTOC"` |
+| `-l` | Generate log files (General and Error logs) | `-l` |
+| `-v` | Verbose mode (logs on screen) | `-v` |
 
-## 📂 Arquivos de Entrada
+## 📂 Input Files
 
-### 1. conexoes.csv (Obrigatório)
+### 1. connections.csv (Mandatory)
 ```csv
-ponta-a;ponta-b;textoconexao;strokeWidth;strokeColor;dashed;fontStyle;fontSize
-RTIC-SPO99-99;RTOC-SPO98-99;Link Principal;2;#036897;0;1;14
+endpoint-a;endpoint-b;connectiontext;strokeWidth;strokeColor;dashed;fontStyle;fontSize
+RTIC-SPO99-99;RTOC-SPO98-99;Main Link;2;#036897;0;1;14
 ```
 
-### 2. elementos.csv (Opcional)
+### 2. elements.csv (Optional)
 ```csv
-elemento;camada;nivel;cor;siteid;apelido
+element;layer;level;color;siteid;alias
 RTIC-SPO99-99;INNER-CORE;1;#FF0000;SP01;Core-SP
 ```
 
-### 3. localidades.csv (Opcional)
+### 3. locations.csv (Optional)
 ```csv
-siteid;Localidade;RegiaoGeografica;Latitude;Longitude
-SP01;SAOPAULO;Sudeste;23.32.33.S;46.38.44.W
+siteid;Location;GeographicRegion;Latitude;Longitude
+SP01;SAOPAULO;Southeast;23.32.33.S;46.38.44.W
 ```
 
-> **Formato de coordenadas**: Graus.Minutos.Segundos.Direção (ex: 23.32.33.S)
+> **Resilient Headers**: The script supports both hyphenated (`endpoint-a`) and underscore (`endpoint_a`) headers, as well as `connection_text`.
+> **Coordinate format**: Degrees.Minutes.Seconds.Direction (e.g., 23.32.33.S)
 
-## ⚙️ Configuração Avançada (config.json)
+## ⚙️ Advanced Configuration (config.json)
 
-### Seções Principais
+### Main Sections
 ```json
 {
   "LAYER_DEFAULT_BY_PREFIX": {
@@ -124,116 +126,117 @@ SP01;SAOPAULO;Sudeste;23.32.33.S;46.38.44.W
     }
   },
   "PAGE_DEFINITIONS": [
-    {"name": "VISÃO GERAL", "visible_layers": null}
+    {"name": "GENERAL VIEW", "visible_layers": null}
   ],
   "GEOGRAPHIC_LAYOUT": {
     "canvas_width": 5000,
     "background_image": {
-      "url": "mapa_brasil.png"
+      "url": "brazil_map.png"
     }
   }
 }
 ```
 
-### Principais Parâmetros
-1. **LAYER_DEFAULT_BY_PREFIX**: Mapeia prefixos para camadas/níveis
-2. **LAYER_COLORS**: Cores padrão por camada
-3. **LAYER_STYLES**: Aparência dos equipamentos (formas, ícones, tamanhos)
-4. **PAGE_DEFINITIONS**: Visões/páginas do diagrama
-5. **Layouts**: Parâmetros específicos para cada algoritmo:
+### Key Parameters
+1. **LAYER_DEFAULT_BY_PREFIX**: Maps prefixes to layers/levels
+2. **LAYER_COLORS**: Default colors per layer
+3. **LAYER_STYLES**: Equipment appearance (shapes, icons, sizes)
+4. **PAGE_DEFINITIONS**: Diagram views/pages
+5. **Layouts**: Specific parameters for each algorithm:
    - `CIRCULAR_LAYOUT`: center_x, center_y, base_radius
    - `ORGANIC_LAYOUT`: k_base, iterations_per_node
    - `GEOGRAPHIC_LAYOUT`: canvas_width, background_image
    - `HIERARCHICAL_LAYOUT`: vertical_spacing
 
-## 🛠️ Exemplos Práticos
+## 🛠️ Practical Examples
 
-### 1. Geração completa com regionalização
+### 1. Complete generation with regionalization
 ```bash
-python GeradorTopologias.py -t cogh -r redes.csv
+python network-topology-generator.py -t cogh -r networks.csv
 ```
 
-### 2. Filtrar elementos específicos
+### 2. Filter specific elements
 ```bash
-python GeradorTopologias.py -f "in:RTIC;RTOC" -t c backbone.csv
+python network-topology-generator.py -f "in:RTIC;RTOC" -t c backbone.csv
 ```
 
-### 3. Opções avançadas
+### 3. Advanced options
 ```bash
-python GeradorTopologias.py -y -d -o nc -t gh -l rede_principal.csv
+python network-topology-generator.py -y -d -o nc -t gh -l main_network.csv
 ```
 
-## ⚠️ Solução de Problemas
+## ⚠️ Troubleshooting
 
-| Problema | Solução |
-|----------|---------|
-| Nós sobrepostos | Aumente `radius_increment` (circular) ou `min_distance` (geográfico) |
-| Elementos vermelhos no centro | Nós sem siteid no `localidades.csv` |
-| Layout geográfico não gerado | Verifique `elementos.csv` e `localidades.csv` |
-| JSON inválido | Valide em [jsonlint.com](https://jsonlint.com) |
-| Nós fora do diagrama | Ajuste `center_x/center_y` no config.json |
-| Conexões sobrepostas | Ative prevenção em `CONNECTION_STYLE_BASE` |
+| Problem | Solution |
+|---------|----------|
+| Overlapping nodes | Increase `radius_increment` (circular) or `min_distance` (geographic) |
+| Red elements in center | Nodes lacking a siteid in `locations.csv` |
+| Geographic layout not generated | Check `elements.csv` and `locations.csv` |
+| Invalid JSON | Validate at [jsonlint.com](https://jsonlint.com) |
+| Nodes outside diagram | Adjust `center_x/center_y` in config.json |
+| Overlapping connections | Enable prevention in `CONNECTION_STYLE_BASE` |
 
-## 📌 Dicas Importantes
+## 📌 Important Tips
 
-1. **Hierarquia de Configurações**:
-   - `config.json` > Opções CLI > Dados CSV
-   - Use `-d` para ignorar customizações nos CSVs
+1. **Configuration Hierarchy**:
+   - `config.json` > CLI Options > CSV Data
+   - Use `-d` to ignore customizations natively set in CSVs
 
-2. **Layout Geográfico**:
-   - Requer `elementos.csv` e `localidades.csv`
-   - Nós sem siteid são posicionados em espiral no centro
-   - Para evitar sobreposição, aumente `min_node_distance`
+2. **Geographic Layout**:
+   - Requires `elements.csv` and `locations.csv`
+   - Nodes without siteid or coordinates are placed in a central spiral (`TO_REVIEW` layer)
+   - A specific `geographic_review.log` is generated listing these elements
+   - To prevent overlapping, increase `min_node_distance`
 
-3. **Filtragem Avançada**:
+3. **Advanced Filtering**:
    ```bash
-   # Somente elementos RTIC/RTOC:
+   # Only RTIC/RTOC elements:
    -f "in:RTIC;RTOC" 
    
-   # Remover camadas METRO/ACCESS:
+   # Remove METRO/ACCESS layers:
    -f "rc:METRO;ACCESS"
    ```
 
 4. **Performance**:
-   - Para redes grandes (>500 nós), prefira layout Circular ou Hierárquico
-   - Use `-l` para gerar logs detalhados
+   - For large networks (>500 nodes), prefer Circular or Hierarchical layout
+   - Use `-l` to generate detailed logs
 
-## 📤 Saída
-Arquivos no formato:  
-`NomeArquivo_TIMESTAMP_layout.drawio`  
-Ex: `rede_sp_20250615143045_geografico.drawio`
+## 📤 Output
+Files in format:  
+`FileName_TIMESTAMP_layout.drawio`  
+Ex: `sp_network_20250615143045_geographic.drawio`
 
-> **Visualize os arquivos**: [app.diagrams.net](https://app.diagrams.net/) ou Draw.io Desktop
+> **View the generated files**: [app.diagrams.net](https://app.diagrams.net/) or Draw.io Desktop
 
-## 🔄 Fluxo de Processamento
+## 🔄 Processing Flow
 
 ```mermaid
 graph TD
-    A[CSVs de Entrada] --> B{Modo Execução}
-    B -->|CLI| C[Processar Argumentos]
-    B -->|GUI| D[Interface Gráfica]
+    A[Input CSVs] --> B{Execution Mode}
+    B -->|CLI| C[Parse Arguments]
+    B -->|GUI| D[Graphical Interface]
     
-    C --> E[Carregar Configuração]
+    C --> E[Load Configuration]
     D --> E
-    E --> F[Ler Dados]
+    E --> F[Read Data]
     
-    F --> G{Aplicar Filtros?}
-    G -->|Sim| H[Filtrar Elementos/Camadas]
-    G -->|Não| I[Construir Grafo]
+    F --> G{Apply Filters?}
+    G -->|Yes| H[Filter Elements/Layers]
+    G -->|No| I[Build Graph]
     H --> I
     
-    I --> J{Regionalização?}
-    J -->|Sim| K[Agrupar por Região]
-    J -->|Não| L[Calcular Layout]
+    I --> J{Regionalization?}
+    J -->|Yes| K[Group by Region]
+    J -->|No| L[Calculate Layout]
     K --> L
     
-    L --> M[Gerar XML Draw.io]
-    M --> N[Adicionar Legendas]
-    N --> O[Salvar Arquivo]
+    L --> M[Generate Draw.io XML]
+    M --> N[Add Legends]
+    N --> O[Save File]
 ```
 
-🔗 **Repositório Oficial**:  
+🔗 **Official Repository**:  
 https://github.com/flashbsb/Network-Topology-Generator-for-Drawio
 
-📜 **Licença**:  
+📜 **License**:  
 [MIT License](https://github.com/flashbsb/Network-Topology-Generator-for-Drawio/blob/main/LICENSE)

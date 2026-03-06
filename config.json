@@ -1,35 +1,110 @@
 {
-	"LAYER_DEFAULT_BY_PREFIX": {
-        "RTIC": {"camada": "INNER-CORE", "nivel": 1},
-        "RTOC": {"camada": "OUTER-CORE", "nivel": 2},
-        "RTRR": {"camada": "REFLECTOR", "nivel": 3},
-        "RTPR": {"camada": "PEERING", "nivel": 4},
-        "RTED": {"camada": "EDGE", "nivel": 5},
-        "RTAC": {"camada": "ACCESS-EDGE", "nivel": 6},
-		"RTAG": {"camada": "ACCESS-EDGE", "nivel": 6},
-        "DW": {"camada": "DWDM", "nivel": 7},
-        "ELS": {"camada": "DWDM", "nivel": 7},
-        "RTMA": {"camada": "METRO", "nivel": 8},
-        "EAF": {"camada": "METRO", "nivel": 8},
-        "SWAC": {"camada": "METRO", "nivel": 8},
-		"SWED": {"camada": "METRO", "nivel": 8},
-        "SMAG": {"camada": "METRO", "nivel": 8},
-		"SMAC": {"camada": "METRO", "nivel": 8},
-		"SWL2": {"camada": "METRO", "nivel": 8},
-		"SWAG": {"camada": "METRO", "nivel": 8},
-		"SWCE": {"camada": "METRO", "nivel": 9},
-		"CDN": {"camada": "CDN", "nivel": 10},
-		"SW-CSDC": {"camada": "DC", "nivel": 10},
-		"PTT": {"camada": "PTT", "nivel": 10},
-		"ISP": {"camada": "ISP", "nivel": 10},
-		"TRANSITO": {"camada": "TRANSITO", "nivel": 10},
-		"PEERING": {"camada": "PEERING", "nivel": 10},
-        "default": {"camada": "default", "nivel": 10}
+    "LAYER_DEFAULT_BY_PREFIX": {
+        "RTIC": {
+            "layer": "INNER-CORE",
+            "level": 1
+        },
+        "RTOC": {
+            "layer": "OUTER-CORE",
+            "level": 2
+        },
+        "RTRR": {
+            "layer": "REFLECTOR",
+            "level": 3
+        },
+        "RTPR": {
+            "layer": "PEERING",
+            "level": 4
+        },
+        "RTED": {
+            "layer": "EDGE",
+            "level": 5
+        },
+        "RTAC": {
+            "layer": "ACCESS-EDGE",
+            "level": 6
+        },
+        "RTAG": {
+            "layer": "ACCESS-EDGE",
+            "level": 6
+        },
+        "DW": {
+            "layer": "DWDM",
+            "level": 7
+        },
+        "ELS": {
+            "layer": "DWDM",
+            "level": 7
+        },
+        "RTMA": {
+            "layer": "METRO",
+            "level": 8
+        },
+        "EAF": {
+            "layer": "METRO",
+            "level": 8
+        },
+        "SWAC": {
+            "layer": "METRO",
+            "level": 8
+        },
+        "SWED": {
+            "layer": "METRO",
+            "level": 8
+        },
+        "SMAG": {
+            "layer": "METRO",
+            "level": 8
+        },
+        "SMAC": {
+            "layer": "METRO",
+            "level": 8
+        },
+        "SWL2": {
+            "layer": "METRO",
+            "level": 8
+        },
+        "SWAG": {
+            "layer": "METRO",
+            "level": 8
+        },
+        "SWCE": {
+            "layer": "METRO",
+            "level": 9
+        },
+        "CDN": {
+            "layer": "CDN",
+            "level": 10
+        },
+        "SW-CSDC": {
+            "layer": "DC",
+            "level": 10
+        },
+        "PTT": {
+            "layer": "PTT",
+            "level": 10
+        },
+        "ISP": {
+            "layer": "ISP",
+            "level": 10
+        },
+        "TRANSITO": {
+            "layer": "TRANSITO",
+            "level": 10
+        },
+        "PEERING": {
+            "layer": "PEERING",
+            "level": 10
+        },
+        "default": {
+            "layer": "default",
+            "level": 10
+        }
     },
-	"LAYER_COLORS": {
-		"PTT": "#000000",
-		"ISP": "#000000",
-		"TRANSITO": "#000000",
+    "LAYER_COLORS": {
+        "PTT": "#000000",
+        "ISP": "#000000",
+        "TRANSITO": "#000000",
         "INNER-CORE": "#036897",
         "OUTER-CORE": "#0385BE",
         "REFLECTOR": "#775397",
@@ -39,14 +114,14 @@
         "ACCESS-EDGE": "#36B136",
         "DWDM": "#6600CC",
         "METRO": "#005073",
-		"CDN": "#005073",
-		"DC": "#005073",
+        "CDN": "#005073",
+        "DC": "#005073",
         "default": "#036897"
     },
     "LAYER_STYLES": {
         "PTT": {
             "shape": "mxgraph.cisco19.rect",
-            "prIcon": "router",	
+            "prIcon": "router",
             "fillColor": "#000000",
             "strokeColor": "#FFFFFF",
             "width": 50,
@@ -54,7 +129,7 @@
         },
         "ISP": {
             "shape": "mxgraph.cisco19.rect",
-            "prIcon": "router",	
+            "prIcon": "router",
             "fillColor": "#000000",
             "strokeColor": "#FFFFFF",
             "width": 50,
@@ -62,15 +137,15 @@
         },
         "TRANSITO": {
             "shape": "mxgraph.cisco19.rect",
-            "prIcon": "router",	
+            "prIcon": "router",
             "fillColor": "#000000",
             "strokeColor": "#FFFFFF",
             "width": 50,
             "height": 50
-        },		
+        },
         "INNER-CORE": {
             "shape": "mxgraph.cisco19.rect",
-            "prIcon": "router",	
+            "prIcon": "router",
             "fillColor": "#036897",
             "strokeColor": "#FFFFFF",
             "width": 50,
@@ -78,7 +153,7 @@
         },
         "OUTER-CORE": {
             "shape": "mxgraph.cisco19.rect",
-            "prIcon": "router",	
+            "prIcon": "router",
             "fillColor": "#0385BE",
             "strokeColor": "#FFFFFF",
             "width": 50,
@@ -86,7 +161,7 @@
         },
         "PEERING": {
             "shape": "mxgraph.cisco19.rect",
-            "prIcon": "router",	
+            "prIcon": "router",
             "fillColor": "#E98C2F",
             "strokeColor": "#FFFFFF",
             "width": 50,
@@ -94,7 +169,7 @@
         },
         "REFLECTOR": {
             "shape": "mxgraph.cisco19.rect",
-            "prIcon": "router",	
+            "prIcon": "router",
             "fillColor": "#775397",
             "strokeColor": "#FFFFFF",
             "width": 50,
@@ -102,7 +177,7 @@
         },
         "REFLECTOR-VPN": {
             "shape": "mxgraph.cisco19.rect",
-            "prIcon": "router",	
+            "prIcon": "router",
             "fillColor": "#B266FF",
             "strokeColor": "#FFFFFF",
             "width": 50,
@@ -110,7 +185,7 @@
         },
         "EDGE": {
             "shape": "mxgraph.cisco19.rect",
-            "prIcon": "l3_modular",	
+            "prIcon": "l3_modular",
             "fillColor": "#228122",
             "strokeColor": "#ffffff",
             "width": 50,
@@ -118,7 +193,7 @@
         },
         "ACCESS-EDGE": {
             "shape": "mxgraph.cisco19.rect",
-            "prIcon": "l3_modular",			
+            "prIcon": "l3_modular",
             "fillColor": "#36B136",
             "strokeColor": "#ffffff",
             "width": 50,
@@ -139,14 +214,14 @@
             "width": 50,
             "height": 50
         },
-		"CDN": {
+        "CDN": {
             "shape": "mxgraph.alibaba_cloud.pcdn_p2p_cdn",
             "fillColor": "none",
             "strokeColor": "#005073",
             "width": 50,
             "height": 50
         },
-		"DC": {
+        "DC": {
             "shape": "mxgraph.cisco19.rect",
             "prIcon": "l2_switch",
             "fillColor": "none",
@@ -158,7 +233,7 @@
             "shape": "mxgraph.cisco.routers.router",
             "fillColor": "#036897",
             "strokeColor": "#ffffff",
-			"fontSize": "16",
+            "fontSize": "16",
             "width": 50,
             "height": 50
         }
@@ -175,16 +250,46 @@
         "fontStyle": "1"
     },
     "CONNECTION_STYLES": {
-        "INNER-CORE": {"color": "#036897", "strokeWidth": "1"},
-        "OUTER-CORE": {"color": "#0385BE", "strokeWidth": "1"},
-        "REFLECTOR": {"color": "#775397", "strokeWidth": "1"},
-        "REFLECTOR-VPN": {"color": "#B266FF", "strokeWidth": "1"},
-        "PEERING": {"color": "#E98C2F", "strokeWidth": "1"},
-        "EDGE": {"color": "#228122", "strokeWidth": "1"},
-        "ACCESS-EDGE": {"color": "#36B136", "strokeWidth": "1"},
-        "DWDM": {"color": "#6600CC", "strokeWidth": "1"},
-        "METRO": {"color": "#005073", "strokeWidth": "1"},
-        "default": {"color": "#000000", "strokeWidth": "1"}
+        "INNER-CORE": {
+            "color": "#036897",
+            "strokeWidth": "1"
+        },
+        "OUTER-CORE": {
+            "color": "#0385BE",
+            "strokeWidth": "1"
+        },
+        "REFLECTOR": {
+            "color": "#775397",
+            "strokeWidth": "1"
+        },
+        "REFLECTOR-VPN": {
+            "color": "#B266FF",
+            "strokeWidth": "1"
+        },
+        "PEERING": {
+            "color": "#E98C2F",
+            "strokeWidth": "1"
+        },
+        "EDGE": {
+            "color": "#228122",
+            "strokeWidth": "1"
+        },
+        "ACCESS-EDGE": {
+            "color": "#36B136",
+            "strokeWidth": "1"
+        },
+        "DWDM": {
+            "color": "#6600CC",
+            "strokeWidth": "1"
+        },
+        "METRO": {
+            "color": "#005073",
+            "strokeWidth": "1"
+        },
+        "default": {
+            "color": "#000000",
+            "strokeWidth": "1"
+        }
     },
     "CONNECTION_STYLE_BASE": {
         "endArrow": "none",
@@ -194,19 +299,65 @@
         "fontStyle": "1",
         "fontSize": "16",
         "labelBackgroundColor": "white",
-		"curved": "1"
+        "curved": "1"
     },
     "PAGE_DEFINITIONS": [
-        {"name": "GERAL", "visible_layers": null},
-        {"name": "CORE", "visible_layers": ["INNER-CORE", "OUTER-CORE"]},
-        {"name": "REFLECTOR +INNER", "visible_layers": ["INNER-CORE", "REFLECTOR-VPN", "REFLECTOR"]},
-		{"name": "PEERING TRANSITO +INNER", "visible_layers": ["INNER-CORE", "PEERING", "TRANSITO", "PTT", "ISP"]},
-        {"name": "EDGE +CORE", "visible_layers": ["INNER-CORE", "OUTER-CORE", "EDGE", "ACCESS-EDGE"]},
-        {"name": "METRO +EDGE", "visible_layers": ["EDGE", "ACCESS-EDGE","METRO"]},
-		{"name": "CDN", "visible_layers": ["DC", "CDN"]}
+        {
+            "name": "GENERAL",
+            "visible_layers": null
+        },
+        {
+            "name": "CORE",
+            "visible_layers": [
+                "INNER-CORE",
+                "OUTER-CORE"
+            ]
+        },
+        {
+            "name": "REFLECTOR +INNER",
+            "visible_layers": [
+                "INNER-CORE",
+                "REFLECTOR-VPN",
+                "REFLECTOR"
+            ]
+        },
+        {
+            "name": "PEERING TRANSIT +INNER",
+            "visible_layers": [
+                "INNER-CORE",
+                "PEERING",
+                "TRANSITO",
+                "PTT",
+                "ISP"
+            ]
+        },
+        {
+            "name": "EDGE +CORE",
+            "visible_layers": [
+                "INNER-CORE",
+                "OUTER-CORE",
+                "EDGE",
+                "ACCESS-EDGE"
+            ]
+        },
+        {
+            "name": "METRO +EDGE",
+            "visible_layers": [
+                "EDGE",
+                "ACCESS-EDGE",
+                "METRO"
+            ]
+        },
+        {
+            "name": "CDN",
+            "visible_layers": [
+                "DC",
+                "CDN"
+            ]
+        }
     ],
     "CIRCULAR_LAYOUT": {
-		"locked": 1,
+        "locked": 1,
         "node_scale_factor": 1,
         "center_x": 1600,
         "center_y": 1200,
@@ -214,7 +365,7 @@
         "radius_increment": 300
     },
     "ORGANIC_LAYOUT": {
-		"locked": 0,		
+        "locked": 0,
         "node_scale_factor": 1,
         "k_base": 0.25,
         "k_min": 0.8,
@@ -229,7 +380,7 @@
         "base_height": 1000
     },
     "GEOGRAPHIC_LAYOUT": {
-		"locked": 0,
+        "locked": 0,
         "node_scale_factor": 0.5,
         "canvas_width": 5000,
         "canvas_height": 5000,
@@ -245,20 +396,22 @@
             "opacity": 30
         }
     },
-	"HIERARCHICAL_LAYOUT": {
-		"locked": 0,
-		"node_scale_factor": 1,
-		"vertical_spacing": 200,
-		"horizontal_spacing": 100,
-		"top_margin": 50,
-		"left_margin": 50
-	},
+    "HIERARCHICAL_LAYOUT": {
+        "locked": 0,
+        "node_scale_factor": 1,
+        "vertical_spacing": 200,
+        "horizontal_spacing": 100,
+        "top_margin": 50,
+        "left_margin": 50
+    },
     "LEGEND_CONFIG": {
-        "position": {"x": 50, "y": 30},
+        "position": {
+            "x": 50,
+            "y": 30
+        },
         "item_spacing": 40,
         "text_offset": 45,
         "item_size": 30,
         "margin": 50
     }
 }
-
