@@ -88,6 +88,7 @@ import math
 import logging
 import uuid
 import chardet
+import html
 import json
 import networkx as nx
 import time
@@ -101,7 +102,7 @@ import threading
 import multiprocessing
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
-versionctr = "1.1.3"
+versionctr = "1.2.0"
 REPO_URL = "https://github.com/flashbsb/network-topology-generator"
 
 # =====================================================
@@ -124,12 +125,14 @@ class StatusPrinter:
     _lock = multiprocessing.Lock()
     _total_tasks = 0
     _completed_tasks = multiprocessing.Value('i', 0)
+    _bar_started = multiprocessing.Value('b', False)
 
     @classmethod
     def set_total_tasks(cls, count):
         with cls._lock:
             cls._total_tasks = count
             cls._completed_tasks.value = 0
+            cls._bar_started.value = False
 
     @classmethod
     def show_task(cls, message, status="in_progress"):
@@ -163,6 +166,10 @@ class StatusPrinter:
                 filled_len = int(bar_len * current // cls._total_tasks)
                 bar = '█' * filled_len + '-' * (bar_len - filled_len)
                 
+                if not cls._bar_started.value:
+                    print()
+                    cls._bar_started.value = True
+                    
                 print(f"\r[{bar}] {progress:3.0f}% | {prefix}", end='\033[K')
                 if status != "in_progress":
                     print() # Move to next line if it's a completion
@@ -181,15 +188,26 @@ class StatusPrinter:
     @classmethod
     def show_summary(cls, total_time, total_files, success_count, nodes_count=0, connections_count=0):
         with cls._lock:
-            print(f"\n{Colors.BOLD}{Colors.CYAN}📊 EXECUTION SUMMARY{Colors.ENDC}")
+            print(f"\n✨ {Colors.GREEN}Processing completed successfully!{Colors.ENDC}\n")
+            
+            print(f"{Colors.BOLD}{Colors.CYAN}📊 EXECUTION SUMMARY{Colors.ENDC}")
             print(f"{Colors.GRAY}----------------------------------------------------{Colors.ENDC}")
             print(f"⏱️  Total time:     {Colors.BOLD}{total_time:.2f}s{Colors.ENDC}")
             print(f"📂 Files processed: {Colors.BOLD}{success_count}/{total_files}{Colors.ENDC}")
             if nodes_count or connections_count:
                 print(f"🏗️  Infrastructure: {Colors.BOLD}{nodes_count} nodes, {connections_count} connections{Colors.ENDC}")
-            print(f"{Colors.GRAY}----------------------------------------------------{Colors.ENDC}")
-            print(f"🔗 Repository:     {Colors.UNDERLINE}{REPO_URL}{Colors.ENDC}")
-            print(f"✨ {Colors.GREEN}Processing completed successfully!{Colors.ENDC}\n")
+            print(f"{Colors.GRAY}----------------------------------------------------{Colors.ENDC}\n")
+            
+            print(f"🔗 {Colors.BOLD}Repository - Follow on GitHub for new versions and updates{Colors.ENDC}\n")
+            
+            print(f"{Colors.CYAN}Generate topologies dynamically{Colors.ENDC}")
+            print(f"{Colors.UNDERLINE}https://github.com/flashbsb/network-topology-generator{Colors.ENDC}\n")
+            
+            print(f"{Colors.CYAN}Execute massive commands simply and generate connection information between network elements{Colors.ENDC}")
+            print(f"{Colors.UNDERLINE}https://github.com/flashbsb/network-data-extractor{Colors.ENDC}\n")
+            
+            print(f"{Colors.CYAN}Dimension backbone topologies for testing:{Colors.ENDC}")
+            print(f"{Colors.UNDERLINE}https://github.com/flashbsb/backbone-network-topology-generator{Colors.ENDC}\n")
 
 # Try to import psutil for memory monitoring, but it's not mandatory
 PSUTIL_AVAILABLE = False
@@ -2671,7 +2689,7 @@ class TopologyGenerator:
                 page_content.extend([
                     f'        <mxCell id="{bg_id}" value="" style="shape=image;image={bg_cfg["url"]};',
                     f'          imageAspect=0;aspect=fixed;verticalLabelPosition=bottom;verticalAlign=top;',
-                    f'          opacity={bg_cfg.get("opacity", 30)};" vertex="1" parent="1" visible="0">',
+                    f'          opacity={bg_cfg.get("opacity", 30)};" vertex="1" parent="1" visible="1">',
                     f'          <mxGeometry x="{bg_cfg["x"]}" y="{bg_cfg["y"]}" width="{bg_cfg["width"]}" height="{bg_cfg["height"]}" as="geometry"/>',
                     f'        </mxCell>'
                 ])
@@ -2702,21 +2720,19 @@ class TopologyGenerator:
         # Add layer objects in alphabetical order
         sorted_layers = sorted(self.layer_ids.items(), key=lambda x: x[0])
         for layer, lid in sorted_layers:
-            # Determine layer visibility
-            layer_visible = "1"
-            if self.hide_connection_layers:
-                layer_visible = "1"
-                if layer.endswith("_CNX") and self.hide_connection_layers:
-                    layer_visible = "0"
-                
             if layer not in active_layers:
                 continue
                 
-            page_content.extend([
-                f'        <object id="{lid}" label="{layer}">',
-                f'          <mxCell style="locked={locked};" parent="0" visible="{layer_visible}"/>',
-                f'        </object>'
-            ])
+            # Determine layer visibility
+            layer_visible = "1"
+            if layer.endswith("_CNX") and self.hide_connection_layers:
+                layer_visible = "0"
+            
+            # Using standard mxCell with value for the layer name
+            # This is more robust than using <object> for layers
+            page_content.append(
+                f'        <mxCell id="{lid}" value="{html.escape(layer)}" style="locked={locked};" parent="0" visible="{layer_visible}"/>'
+            )
 
         # Nodes already precomputed as generated_nodes above
         
@@ -2727,13 +2743,13 @@ class TopologyGenerator:
         spacing_factor = 20
         # --- END OF MODIFICATION ---
 
-        # Add connections only if both nodes exist
+        # Add connections only if both nodes exist on THIS page and their layer is active
         for conn in self.connections:
-            if (conn['layer'] not in expanded_visible_layers or
-                conn['source'] not in self.node_ids or
-                conn['target'] not in self.node_ids or
-                conn['source'] not in positions or
-                conn['target'] not in positions):
+            # IMPORTANT: Connection must have both endpoints in generated_nodes for this page
+            # AND its layer must be one of the active layers (not pruned)
+            if (conn['source'] not in generated_nodes or 
+                conn['target'] not in generated_nodes or
+                conn['layer'] not in active_layers):
                 continue
             connection_count += 1
             # --- START OF MODIFICATION ---
@@ -2822,14 +2838,17 @@ class TopologyGenerator:
             if not self.hide_node_names:
                 label = alias if alias else node  # Prioritize alias
             
-            page_content.extend([
-                f'        <object id="{self.node_ids[node]}" label="{label}">',
-                f'          <mxCell style="{style["style"]}" vertex="1" parent="{self.layer_ids[data["layer"]]}">',
-                f'            <mxGeometry x="{x - style["width"]/2}" y="{y - style["height"]/2}" ',
-                f'width="{style["width"]}" height="{style["height"]}" as="geometry"/>',
-                f'          </mxCell>',
-                f'        </object>'
-            ])
+            # Using standard mxCell with value for the node label
+            # Using html.escape to avoid breaking XML with special characters
+            page_content.append(
+                f'        <mxCell id="{self.node_ids[node]}" value="{html.escape(label)}" style="{style["style"]}" vertex="1" parent="{self.layer_ids[data["layer"]]}">'
+            )
+            page_content.append(
+                f'          <mxGeometry x="{x - style["width"]/2}" y="{y - style["height"]/2}" width="{style["width"]}" height="{style["height"]}" as="geometry"/>'
+            )
+            page_content.append(
+                '        </mxCell>'
+            )
 
         # Calculate bounding box to position legend
         min_x = float('inf')
@@ -2859,11 +2878,9 @@ class TopologyGenerator:
 
         # Create LEGEND layer
         legenda_layer_id = str(uuid.uuid4())
-        page_content.extend([
-            f'        <object id="{legenda_layer_id}" label="LEGEND">',
-            f'          <mxCell style="locked={locked};" parent="0" visible="1"/>',
-            f'        </object>'
-        ])
+        page_content.append(
+            f'        <mxCell id="{legenda_layer_id}" value="LEGEND" style="locked={locked};" parent="0" visible="1"/>'
+        )
         
         # Legend configuration and generation
         legend_config = self.config.get("LEGEND_CONFIG", {
@@ -2888,9 +2905,9 @@ class TopologyGenerator:
         
         if base_layers:
             # Legend title with page name
-            page_name = page_def["name"].replace('"', '&quot;')
+            page_name_esc = html.escape(page_def["name"])
             page_content.extend([
-                f'        <mxCell id="legend-title" value="{page_name}" style="text;html=1;strokeColor=none;fillColor=none;'
+                f'        <mxCell id="legend-title" value="{page_name_esc}" style="text;html=1;strokeColor=none;fillColor=none;'
                 f'align=left;verticalAlign=middle;fontStyle=1;fontSize=16;" vertex="1" parent="{legenda_layer_id}">',
                 f'          <mxGeometry x="{pos_x}" y="{pos_y}" width="200" height="30" as="geometry"/>',
                 f'        </mxCell>'
@@ -2919,19 +2936,21 @@ class TopologyGenerator:
                 
                 # Add icon
                 item_id = str(uuid.uuid4())
-                page_content.extend([
-                    f'        <object id="{item_id}" label="">',
-                    f'          <mxCell style="{new_style_str}" vertex="1" parent="{legenda_layer_id}">',
-                    f'            <mxGeometry x="{pos_x}" y="{pos_y}" width="{legend_config["item_size"]}" height="{legend_config["item_size"]}" as="geometry"/>',
-                    f'          </mxCell>',
-                    f'        </object>'
-                ])
+                page_content.append(
+                    f'          <mxCell id="{item_id}" value="" style="{new_style_str}" vertex="1" parent="{legenda_layer_id}">'
+                )
+                page_content.append(
+                    f'            <mxGeometry x="{pos_x}" y="{pos_y}" width="{legend_config["item_size"]}" height="{legend_config["item_size"]}" as="geometry"/>'
+                )
+                page_content.append(
+                    '          </mxCell>'
+                )
                 
                 # Add text
                 text_id = str(uuid.uuid4())
-                layer_name = base_layer.replace("-", " ")
+                layer_name_esc = html.escape(base_layer.replace("-", " "))
                 page_content.extend([
-                    f'        <mxCell id="{text_id}" value="{layer_name}" style="text;html=1;strokeColor=none;fillColor=none;'
+                    f'        <mxCell id="{text_id}" value="{layer_name_esc}" style="text;html=1;strokeColor=none;fillColor=none;'
                     f'align=left;verticalAlign=middle;fontSize=14;" vertex="1" parent="{legenda_layer_id}">',
                     f'          <mxGeometry x="{pos_x + legend_config["text_offset"]}" y="{pos_y + 5}" width="200" height="30" as="geometry"/>',
                     f'        </mxCell>'
@@ -3050,13 +3069,18 @@ def process_file(connections_file, config, include_orphans=False, layouts_choice
         
         # Detailed performance log
         file_time = time.perf_counter() - file_start
-        StatusPrinter.show_task(f"Success: {os.path.basename(connections_file)} ({len(generator.nodes)} nodes, {len(generator.connections)} connections)", "success")
+        file_summary = f"Success: {os.path.basename(connections_file)} ({len(generator.nodes)} nodes, {len(generator.connections)} connections)"
         logger.info("✅ [SUCCESS] File processed in %.2fs | Layouts: %s | Nodes: %d | Connections: %d",
                   file_time, ', '.join(generated_layouts), 
                   len(generator.nodes), len(generator.connections))
         
         # Register elements without coordinates/siteid
-        nodes_review = [n for n, d in generator.nodes.items() if d.get('layer') == "TO_REVIEW"]
+        # Include nodes explicitly in TO_REVIEW OR any node without coordinates if geographic layout was requested
+        is_geographic = any(layout_key == 'geografico' for layout_key, _ in layouts_to_process)
+        nodes_review = [
+            n for n, d in generator.nodes.items() 
+            if d.get('layer') == "TO_REVIEW" or (is_geographic and d.get('coordinates') is None)
+        ]
         if nodes_review:
             review_log_file = os.path.join(output_dir, f"geographic_review_{base_name}_{timestamp}.log")
             try:
@@ -3084,13 +3108,14 @@ def process_file(connections_file, config, include_orphans=False, layouts_choice
         return {
             "success": success,
             "nodes": len(generator.nodes),
-            "connections": len(generator.connections)
+            "connections": len(generator.connections),
+            "summary": file_summary
         }
     except Exception as e:
         logger.exception("💥 [FAILURE] Error during processing")
         logger.error("Context: layouts=%s, regional=%s, elements=%s",
                    layouts_choice, regionalization, elements_file)
-        return {"success": False, "nodes": 0, "connections": 0}
+        return {"success": False, "nodes": 0, "connections": 0, "summary": f"Failed: {os.path.basename(connections_file)}"}
 
 def main():
     global_start = time.perf_counter()
@@ -3485,6 +3510,12 @@ def main():
     # Calculate total nodes and connections for summary
     total_nodes = sum(r.get("nodes", 0) for r in results)
     total_connections = sum(r.get("connections", 0) for r in results)
+
+    # Print file summaries after progress bar is complete
+    print() # extra space after progress bar
+    for r in results:
+        if r.get("summary"):
+            StatusPrinter.show_task(r["summary"], "success" if r.get("success") else "error")
     
     StatusPrinter.show_summary(total_time, total_files, success_count, total_nodes, total_connections)
     
