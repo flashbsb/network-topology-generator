@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0] - 2026-03-07
+### Added
+- **Dynamic GeoJSON Map Support**: Integrated vector-based map rendering using external GeoJSON files. This allows for global map representation including countries, states, and regional boundaries.
+- **Hierarchical Boundary Drawing**: Support for rendering internal administrative boundaries (like states or provinces) directly in the background of Draw.io diagrams.
+- **Smart Scaling & Alignment**: Implementation of a "Reference Geo-Box" system that ensures network elements are perfectly aligned with map boundaries regardless of their geographic position.
+- **Vector Overlay Layer**: New `GEOGRAPHIC MAP` layer in Draw.io, placed behind all elements and locked by default for a seamless design experience.
+
+### Changed
+- **Geographic Layout Logic**: Refactored `calculate_geographic_positions` to prioritize GeoJSON extents and user-defined `reference_extents` for coordinate transformation.
+- **Cleaner Configuration**: Optimized the `GEOGRAPHIC_LAYOUT` section in `config.json` to support the new dynamic features while keeping legacy background image support as secondary.
+
+
 ## [1.2.0] - 2026-03-06
 ### Fixed
 - **Draw.io compatibility**: Refactored the diagram XML generation to use standard `mxCell` tags for layers and nodes instead of `object` tags, which resolves visibility issues on complex geographic layouts.

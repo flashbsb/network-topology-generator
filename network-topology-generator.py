@@ -102,7 +102,7 @@ import threading
 import multiprocessing
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
-versionctr = "1.2.0"
+versionctr = "1.3.0"
 REPO_URL = "https://github.com/flashbsb/network-topology-generator"
 
 # =====================================================
@@ -1448,6 +1448,135 @@ class TopologyGenerator:
                     if not self.layers[layer]:  # Remove empty layer
                         del self.layers[layer]
                         del self.layer_ids[layer]
+
+    def _latlon_to_pos(self, lat, lon, cfg, ref_extents=None):
+        """Converts lat/lon to canvas (x, y) coordinates"""
+        margin = cfg.get("margin", 50)
+        canvas_width = cfg.get("canvas_width", 5000)
+        canvas_height = cfg.get("canvas_height", 5000)
+        
+        if not ref_extents:
+            # Fallback scaling if no reference provided (this shouldn't happen usually)
+            return (canvas_width/2, canvas_height/2)
+            
+        min_lat, max_lat = ref_extents["min_lat"], ref_extents["max_lat"]
+        min_lon, max_lon = ref_extents["min_lon"], ref_extents["max_lon"]
+        
+        range_lat = max_lat - min_lat if max_lat != min_lat else 1
+        range_lon = max_lon - min_lon if max_lon != min_lon else 1
+        
+        x = margin + (lon - min_lon) * (canvas_width - 2*margin) / range_lon
+        y = canvas_height - margin - (lat - min_lat) * (canvas_height - 2*margin) / range_lat
+        return x, y
+
+    def _draw_geojson(self, geojson, cfg, ref_extents):
+        """Generates XML cells for GeoJSON boundaries"""
+        if not geojson or 'features' not in geojson:
+            return []
+            
+        map_content = []
+        map_layer_id = "MAP_BACKGROUND"
+        map_opacity = cfg.get("map_opacity", 20)
+        
+        # Add a dedicated layer for the map if it doesn't exist
+        # But we'll handle layer creation in _generate_page for consistency
+        
+        style = f"endArrow=none;html=1;strokeColor=#888888;strokeWidth=1;opacity={map_opacity};curved=1;locked=1;"
+        
+        for feature in geojson['features']:
+            geom = feature.get('geometry')
+            if not geom: continue
+            
+            polygons = []
+            if geom['type'] == 'Polygon':
+                polygons = [geom['coordinates']]
+            elif geom['type'] == 'MultiPolygon':
+                polygons = geom['coordinates']
+                
+            for poly in polygons:
+                for ring in poly:
+                    if len(ring) < 2: continue
+                    
+                    # Create a path string or multiple mxCells
+                    # For Draw.io, multiple mxCells forming a path or a custom shape is best
+                    # Let's use multiple connected mxCells as edges for simplicity and compatibility
+                    
+                    prev_pos = None
+                    for lon, lat in ring:
+                        curr_pos = self._latlon_to_pos(lat, lon, cfg, ref_extents)
+                        
+                        if prev_pos:
+                            edge_id = str(uuid.uuid4())
+                            map_content.append(
+                                f'        <mxCell id="{edge_id}" value="" style="{style}" edge="1" parent="{map_layer_id}">'
+                            )
+                            map_content.append(
+                                f'          <mxGeometry relative="1" as="geometry">'
+                            )
+                            map_content.append(
+                                f'            <mxPoint x="{prev_pos[0]:.2f}" y="{prev_pos[1]:.2f}" as="sourcePoint"/>'
+                            )
+                            map_content.append(
+                                f'            <mxPoint x="{curr_pos[0]:.2f}" y="{curr_pos[1]:.2f}" as="targetPoint"/>'
+                            )
+                            map_content.append(
+                                f'          </mxGeometry>'
+                            )
+                            map_content.append(
+                                '        </mxCell>'
+                            )
+                        prev_pos = curr_pos
+        return map_content
+
+    def _load_geojson(self, file_path):
+        """Loads and parses a GeoJSON file"""
+        if not file_path or not os.path.exists(file_path):
+            return None
+            
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                logger.info(f"GeoJSON loaded: {file_path}")
+                return data
+        except Exception as e:
+            logger.error(f"Error loading GeoJSON {file_path}: {e}")
+            return None
+
+    def _get_geojson_extents(self, geojson):
+        """Calculates the bounding box of a GeoJSON object"""
+        if not geojson or 'features' not in geojson:
+            return None
+            
+        min_lat = min_lon = float('inf')
+        max_lat = max_lon = float('-inf')
+        
+        found = False
+        for feature in geojson['features']:
+            geom = feature.get('geometry')
+            if not geom: continue
+            
+            coords = []
+            if geom['type'] == 'Polygon':
+                coords = geom['coordinates']
+            elif geom['type'] == 'MultiPolygon':
+                for poly in geom['coordinates']:
+                    coords.extend(poly)
+            
+            for ring in coords:
+                for lon, lat in ring:
+                    min_lat = min(min_lat, lat)
+                    max_lat = max(max_lat, lat)
+                    min_lon = min(min_lon, lon)
+                    max_lon = max(max_lon, lon)
+                    found = True
+                    
+        if not found:
+            return None
+            
+        return {
+            "min_lat": min_lat, "max_lat": max_lat,
+            "min_lon": min_lon, "max_lon": max_lon
+        }
         
         # Filter connections involving removed nodes
         self.connections = [
@@ -2188,11 +2317,25 @@ class TopologyGenerator:
         # ================================================
         # TRATAMENTO ESPECIAL PARA ELEMENTOS SEM LOCALIZAÇÃO (CAMADA DE REVISÃO)
         # ================================================
-        # Calcular centro do canvas
+        # Configurations
+        margin = cfg.get("margin", 50)
+        min_distance = cfg.get("min_distance", 20)
         canvas_width = cfg.get("canvas_width", 5000)
         canvas_height = cfg.get("canvas_height", 5000)
         center_x = canvas_width / 2
         center_y = canvas_height / 2
+        
+        # Determine Reference Extents
+        ref_extents = cfg.get("reference_extents")
+        geojson_path = cfg.get("geojson_file")
+        geojson_data = None
+        
+        if geojson_path:
+            geojson_data = self._load_geojson(geojson_path)
+            if geojson_data:
+                geo_extents = self._get_geojson_extents(geojson_data)
+                if geo_extents:
+                    ref_extents = geo_extents
         
         # Posicionar elementos sem sites/coord no centro em espiral
         review_positions = {}
@@ -2222,21 +2365,23 @@ class TopologyGenerator:
             return review_positions
 
         
-        # Use .values() to access coordinates directly
-        coords = valid_nodes.values()
-        
-        # Calculate bounding box
-        lats = [c[0] for c in coords]  # Corrected!
-        lons = [c[1] for c in coords]  # Corrected!
-        min_lat, max_lat = min(lats), max(lats)
-        min_lon, max_lon = min(lons), max(lons)
-        
+        # Determine global bounding box for scaling
+        if ref_extents:
+            min_lat, max_lat = ref_extents["min_lat"], ref_extents["max_lat"]
+            min_lon, max_lon = ref_extents["min_lon"], ref_extents["max_lon"]
+            logger.info(f"Using reference extents for scaling: {ref_extents}")
+        elif valid_nodes:
+            coords = valid_nodes.values()
+            lats = [c[0] for c in coords]
+            lons = [c[1] for c in coords]
+            min_lat, max_lat = min(lats), max(lats)
+            min_lon, max_lon = min(lons), max(lons)
+            logger.info("Using node bounding box for scaling")
+        else:
+            return review_positions
+
         range_lat = max_lat - min_lat if max_lat != min_lat else 1
         range_lon = max_lon - min_lon if max_lon != min_lon else 1
-        
-        # Configurations
-        margin = cfg["margin"]
-        min_distance = cfg["min_distance"]
         
         # Map nodes by coordinate
         nodes_by_coord = defaultdict(list)
@@ -2673,7 +2818,29 @@ class TopologyGenerator:
         
         # Add background image for geographic layout
         if layout_type == 'geografico':
-            bg_cfg = self.config.get("GEOGRAPHIC_LAYOUT", {}).get("background_image", {})
+            cfg = self.config.get("GEOGRAPHIC_LAYOUT", {})
+            bg_cfg = cfg.get("background_image", {})
+            
+            # 1. GeoJSON Vector Map
+            geojson_path = cfg.get("geojson_file")
+            if cfg.get("show_map", True) and geojson_path:
+                geojson_data = self._load_geojson(geojson_path)
+                if geojson_data:
+                    ref_extents = self._get_geojson_extents(geojson_data)
+                    # If config has explicit extents, they override GeoJSON
+                    if cfg.get("reference_extents"):
+                        ref_extents = cfg.get("reference_extents")
+                    
+                    if ref_extents:
+                        # Add Map Layer Object
+                        page_content.append(
+                            f'        <mxCell id="MAP_BACKGROUND" value="GEOGRAPHIC MAP" style="locked=1;" parent="0" visible="1"/>'
+                        )
+                        # Render vector map
+                        vector_map_xml = self._draw_geojson(geojson_data, cfg, ref_extents)
+                        page_content.extend(vector_map_xml)
+            
+            # 2. Static Background Image
             if os.path.exists('brasil-map.png'):
                 bg_cfg = bg_cfg.copy()
                 bg_cfg["url"] = 'brasil-map.png'
@@ -2681,7 +2848,6 @@ class TopologyGenerator:
             elif bg_cfg.get("url", "").startswith("http"):
                 logger.info("Using remote image as background")
             else:
-                logger.warning("Background image not found")
                 bg_cfg = None
 
             if bg_cfg:

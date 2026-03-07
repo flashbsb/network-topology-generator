@@ -14,7 +14,9 @@ The **Network Topology Generator for Draw.io** is an advanced tool that converts
 * Automatic regionalization (e.g., CORE → CORE_SOUTHEAST)
 * Automatic legends and multiple pages/views
 * Advanced customization via `config.json`
-* Support for geographic maps and DWDM/PTT elements
+* Support for dynamic GeoJSON vector maps (World, countries, states)
+* Smart Scaling & Alignment via Reference Geo-Box
+* Support for static background images (legacy)
 * Advanced element and layer filtering
 * Option to hide node names and connection layers
 * Special handling for elements lacking geographic location
@@ -136,8 +138,12 @@ SP01;SAOPAULO;Southeast;23.32.33.S;46.38.44.W
   ],
   "GEOGRAPHIC_LAYOUT": {
     "canvas_width": 5000,
-    "background_image": {
-      "url": "brazil_map.png"
+    "show_map": true,
+    "geojson_file": "config/brazil_states.geojson",
+    "map_opacity": 20,
+    "reference_extents": {
+        "min_lat": -34.0, "max_lat": 6.0,
+        "min_lon": -74.0, "max_lon": -34.0
     }
   }
 }
@@ -188,11 +194,13 @@ python network-topology-generator.py -y -d -o nc -t gh -l main_network.csv
    - `config.json` > CLI Options > CSV Data
    - Use `-d` to ignore customizations natively set in CSVs
 
-2. **Geographic Layout**:
-   - Requires `elements.csv` and `locations.csv`
-   - Nodes without siteid or coordinates are placed in a central spiral (`TO_REVIEW` layer)
-   - A specific `geographic_review.log` is generated listing these elements
-   - To prevent overlapping, increase `min_node_distance`
+2. **Geographic Layout & Dynamic Maps**:
+   - Requires `elements.csv` and `locations.csv`.
+   - **Vector Maps**: Use `geojson_file` to draw boundaries directly in Draw.io.
+   - **Smart Scaling**: The script automatically aligns elements with the GeoJSON boundaries. Use `reference_extents` for manual coordinate boundaries.
+   - Nodes without siteid or coordinates are placed in a central spiral (`TO_REVIEW` layer).
+   - A specific `geographic_review.log` is generated listing these elements.
+   - To prevent overlapping, increase `min_node_distance`.
 
 3. **Advanced Filtering**:
    ```bash

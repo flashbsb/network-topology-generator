@@ -387,6 +387,15 @@
         "margin": 50,
         "min_distance": 20,
         "min_node_distance": 20,
+        "show_map": true,
+        "geojson_file": "config/brazil_states.geojson",
+        "map_opacity": 20,
+        "reference_extents": {
+            "min_lat": -34.0,
+            "max_lat": 6.0,
+            "min_lon": -74.0,
+            "max_lon": -34.0
+        },
         "background_image": {
             "url": "https://upload.wikimedia.org/wikipedia/commons/1/10/Brazil_Blank_Map.svg",
             "x": 0,
