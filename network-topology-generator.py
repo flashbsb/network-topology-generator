@@ -200,13 +200,13 @@ class StatusPrinter:
             
             print(f"🔗 {Colors.BOLD}Repository - Follow on GitHub for new versions and updates{Colors.ENDC}\n")
             
-            print(f"{Colors.CYAN}Generate topologies dynamically{Colors.ENDC}")
+            print(f"Generate topologies dynamically")
             print(f"{Colors.UNDERLINE}https://github.com/flashbsb/network-topology-generator{Colors.ENDC}\n")
             
-            print(f"{Colors.CYAN}Execute massive commands simply and generate connection information between network elements{Colors.ENDC}")
+            print(f"Execute massive commands simply and generate connection information between network elements")
             print(f"{Colors.UNDERLINE}https://github.com/flashbsb/network-data-extractor{Colors.ENDC}\n")
             
-            print(f"{Colors.CYAN}Dimension backbone topologies for testing:{Colors.ENDC}")
+            print(f"Dimension backbone topologies for testing:")
             print(f"{Colors.UNDERLINE}https://github.com/flashbsb/backbone-network-topology-generator{Colors.ENDC}\n")
 
 # Try to import psutil for memory monitoring, but it's not mandatory
@@ -392,12 +392,16 @@ Solution: Adjust parameters in config.json:
     Naming pattern: FileName_TIMESTAMP_layout.drawio
     Example: network_sp_20250615143045_geographic.drawio
 
-📌 How to generate test files for script loading
-Use the National Backbone Topology Generator, available at:
-    https://github.com/flashbsb/Backbone-Network-Topology-Generator
+🔗 Repository - Follow on GitHub for new versions and updates
 
-🌎 OFFICIAL REPOSITORY: 
-    https://github.com/flashbsb/Network-Topology-Generator-for-Drawio
+Generate topologies dynamically
+https://github.com/flashbsb/network-topology-generator
+
+Execute massive commands simply and generate connection information between network elements
+https://github.com/flashbsb/network-data-extractor
+
+Dimension backbone topologies for testing:
+https://github.com/flashbsb/backbone-network-topology-generator
 """.format(versionctr=versionctr)
 
 # Logging configuration will be done in main() with timestamp

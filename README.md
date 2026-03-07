@@ -249,8 +249,16 @@ graph TD
     N --> O[Save File]
 ```
 
-🔗 **Official Repository**:  
+🔗 **Repository - Follow on GitHub for new versions and updates**
+
+**Generate topologies dynamically**  
 https://github.com/flashbsb/network-topology-generator
+
+**Execute massive commands simply and generate connection information between network elements**  
+https://github.com/flashbsb/network-data-extractor
+
+**Dimension backbone topologies for testing:**  
+https://github.com/flashbsb/backbone-network-topology-generator
 
 📜 **License**:  
 [MIT License](https://github.com/flashbsb/network-topology-generator/blob/main/LICENSE)
